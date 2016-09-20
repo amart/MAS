@@ -1,0 +1,228 @@
+{
+    "analyst": "Clay Porch",
+    "study_name": "Bluefin Tuna",
+    "movement_type": "natal_homing",
+    "data": "/Users/matthewsupernaw/BluefinData.nc",
+    "years": 10,
+    "first_year": 1995,
+    "last_year": 2005,
+    "season": {
+        "id": 1,
+        "name": "season 1",
+        "months": 6
+    },
+    "season": {
+        "id": 2,
+        "name": "season 2",
+        "months": 6
+    },
+    "recruitment": {
+        "id": 1,
+        "model": "beverton_holt",
+        "parameters": {
+            "alpha": {
+                "value": 100000000.0,
+                "estimated": "true"
+            },
+            "beta": {
+                "value": 1.0,
+                "estimated": "true"
+            }
+        }
+    },
+    "growth": {
+        "model": "von_bertalanffy",
+        "id": 1,
+        "parameters": {
+            "amin": {
+                "value": 2.08333,
+                "min": 2.08333,
+                "max": 2.08333,
+                "estimated": "false"
+            },
+            "amax": {
+                "value": 30.08333,
+                "min": 30.08333,
+                "max": 30.08333,
+                "estimated": "false"
+            },
+            "k": {
+                "value": 30.08333,
+                "min": 30.08333,
+                "max": 30.08333,
+                "estimated": "false"
+            },
+            "linf": {
+                "value": 30.08333,
+                "min": 30.08333,
+                "max": 30.08333,
+                "estimated": "false"
+            }
+        }
+    },
+    "selectivity": {
+        "id": 1,
+        "model": "logistic",
+        "base": "age",
+        "parameters": {
+            "a50": {
+                "value": 1.0,
+                "estimated": "true"
+            },
+            "s": {
+                "value": 0.5,
+                "estimated": "true"
+            }
+        }
+    },
+    "movement":
+            {
+                "id": 1,
+                "season": 1,
+                "estimated": "true",
+                "male": [
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7]],
+                "female": [
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7]]
+
+            },
+    "movement":
+            {
+                "id": 2,
+                "season": 1,
+                "estimated": "true",
+                "male": [
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7]],
+                "female": [
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7],
+                    [0.3, 0.7]]
+            },
+    "area": {
+        "id": 1,
+        "name": "alpha",
+        "recruitment_model": 1,
+        "growth_model": 1,
+        "fecundity_model": 1
+    },
+    "area": {
+        "id": 2,
+        "name": "bravo",
+        "recruitment_model": 1,
+        "growth_model": 1,
+        "fecundity_model": 1
+    },
+    "population": {
+        "id": 1,
+        "name": "pop1",
+        "natal_area": 1,
+        "movement_model": 1,
+        "recruitment_type": "natal",
+        "parameters": {
+            "initial_numbers": {
+                "male": {
+                    "value": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    "min": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    "max": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    "estimated": "true"
+                },
+                "female": {
+                    "value": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    "min": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    "max": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    "estimated": "true"
+                }
+            }
+        }
+    },
+    "population": {
+        "id": 2,
+        "name": "pop2",
+        "natal_area": 2,
+        "movement_model": 2,
+        "recruitment_type": "natal",
+        "parameters": {
+            "initial_numbers": {
+                "male": {
+                    "value": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    "min": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    "max": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    "estimated": "true"
+                },
+                "female": {
+                    "value": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    "min": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    "max": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    "estimated": "true"
+                }
+            }
+        }
+    },
+    "fleet": {
+        "name": "fleet 1",
+        "id": 1,
+        "selectivity": [
+            {
+                "id": 1,
+                "season": 1,
+                "area": 1
+            },
+            {
+                "id": 1,
+                "season": 2,
+                "area": 1
+            }
+        ]
+    },
+    "fleet": {
+        "name": "fleet 2",
+        "id": 2,
+        "selectivity": [
+            {
+                "id": 1,
+                "season": 1,
+                "area": 1
+            },
+            {
+                "id": 1,
+                "season": 2,
+                "area": 2
+            }
+        ]
+
+    }
+}
