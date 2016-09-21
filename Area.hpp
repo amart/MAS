@@ -49,7 +49,7 @@ namespace mas {
         std::string name;
         std::shared_ptr<GrowthBase<REAL_T> > growth_model;
         std::shared_ptr<RecruitmentBase<REAL_T> > recruitment_model;
-        std::shared_ptr<MortalityBase<REAL_T> > mortality_model;
+        std::shared_ptr<Mortality<REAL_T> > mortality_model;
         std::shared_ptr<FecundityBase<REAL_T> > fecundity_model;
 
     };

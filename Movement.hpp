@@ -33,23 +33,17 @@
 #ifndef MAS_MOVEMENT_HPP
 #define MAS_MOVEMENT_HPP
 
+#include "Common.hpp"
+
 namespace mas {
 
     template<typename REAL_T>
-    struct Movement {
+    struct Movement : mas::ModelObject<REAL_T> {
         typedef typename VariableTrait<REAL_T>::variable variable;
-        int id;
         int season;
         std::vector<std::vector<variable> > male_connectivity; //male connectivity matrix, rows must sum to 1
         std::vector<std::vector<variable> > female_connectivity; //female connectivity matrix, rows must sum to 1
 
-        std::vector<variable*> estimated_parameters;
-        std::vector<int> estimated_phase;
-
-        void Register(variable& var, int phase = 1) {
-            this->estimated_parameters.push_back(&var);
-            this->estimated_phase.push_back(phase);
-        }
 
 
     };

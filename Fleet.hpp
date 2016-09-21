@@ -33,19 +33,19 @@
 #ifndef MAS_FLEET_HPP
 #define MAS_FLEET_HPP
 
+#include "Common.hpp"
 #include "Selectivity.hpp"
 
 
 namespace mas {
 
     template<typename REAL_T>
-    struct Fleet {
-        int id;
+    struct Fleet : mas::ModelObject<REAL_T> {
         std::string name;
-        std::unordered_map<int, std::unordered_map<int,int> > season_area_selectivity_ids;
-        std::unordered_map<int, std::unordered_map<int,std::shared_ptr<mas::SelectivityBase<REAL_T> > > > season_area_selectivity;
-        typedef typename std::unordered_map<int, std::unordered_map<int,int> >::iterator season_id_iterator;
-        typedef typename std::unordered_map<int,int>::iterator area_id_iteraor;
+        std::unordered_map<int, std::unordered_map<int, int> > season_area_selectivity_ids;
+        std::unordered_map<int, std::unordered_map<int, std::shared_ptr<mas::SelectivityBase<REAL_T> > > > season_area_selectivity;
+        typedef typename std::unordered_map<int, std::unordered_map<int, int> >::iterator season_id_iterator;
+        typedef typename std::unordered_map<int, int>::iterator area_id_iteraor;
 
     };
 

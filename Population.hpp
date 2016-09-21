@@ -22,6 +22,7 @@
 #include "Area.hpp"
 
 #include "../AutoDiff_Standalone/AutoDiff/AutoDiff.hpp"
+#include "Movement.hpp"
 
 namespace mas {
 
@@ -41,9 +42,10 @@ namespace mas {
         bool natal_homing = false;
         std::shared_ptr<Area<REAL_T> > area;
         std::shared_ptr<Area<REAL_T> > natal_area;
-
+        
         int years;
         int seasons;
+        std::vector<REAL_T> ages;
 
         std::vector<variable> F;
         std::vector<variable> Z;
@@ -51,6 +53,14 @@ namespace mas {
         std::vector<variable> N;
         std::vector<variable> C;
         std::vector<variable> predicted_N;
+
+        void Initialize() {
+            F.resize(years * seasons * ages.size());
+            Z.resize(years * seasons * ages.size());
+            S.resize(years * seasons * ages.size());
+            N.resize(years * seasons * ages.size());
+            predicted_N.resize(years * seasons * ages.size());
+        }
 
         /**
          * Evaluates spawn and recruitment for all ages in a year and season.
@@ -126,11 +136,10 @@ namespace mas {
 
     };
 
-    template<class REAL_T>
-    class Population {
+    template<typename REAL_T>
+    class Population : public mas::ModelObject<REAL_T> {
     public:
         typedef atl::Variable<REAL_T> variable;
-        int id;
         std::string name;
         int natal_area_id;
         int movement_model_id;
@@ -140,6 +149,7 @@ namespace mas {
         int years;
         int seasons;
         int areas;
+        
         std::shared_ptr<Area<REAL_T> > natal_area; //birth area
         std::vector<std::shared_ptr<Area<REAL_T> > > areas_list; //all areas
 
@@ -147,14 +157,15 @@ namespace mas {
         typedef typename std::unordered_map<int, PopulationInfo<REAL_T> >::iterator cohort_iterator;
         std::unordered_map<int, PopulationInfo<REAL_T> > male_cohorts;
         std::unordered_map<int, PopulationInfo<REAL_T> > female_cohorts;
-
+        std::unordered_map<int, int > movement_models_ids;//season keyed
+        typedef typename std::unordered_map<int, int >::iterator movement_model_id_iterator;
+        
+        std::unordered_map<int, std::shared_ptr<mas::Movement<REAL_T> > > movement_models;//season keyed
         //Estimable
         std::vector<std::vector<variable> > movement_coefficients;
         std::vector<variable> initial_population_males;
         std::vector<variable> initial_population_females;
 
-        std::vector<variable*> estimated_parameters;
-        std::vector<int> estimated_phase;
 
 
         //    typedef typename std::unordered_map<std::vector<std::vector<variable> > >::iterator movement_coefficient_iterator;
@@ -187,11 +198,6 @@ namespace mas {
 
 
 
-        }
-
-        void Register(variable& var, int phase = 1) {
-            this->estimated_parameters.push_back(&var);
-            this->estimated_phase.push_back(phase);
         }
 
         void Prepare() {

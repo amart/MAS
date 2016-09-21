@@ -36,16 +36,9 @@
 namespace mas {
 
     template<typename REAL_T>
-    struct RecruitmentBase {
+    struct RecruitmentBase : mas::ModelObject<REAL_T>{
         typedef typename mas::VariableTrait<REAL_T>::variable variable;
-        int id;
-        std::vector<variable*> estimated_parameters;
-        std::vector<int> estimated_phase;
-
-        void Register(variable& var, int phase = 1) {
-            this->estimated_parameters.push_back(&var);
-            this->estimated_phase.push_back(phase);
-        }
+       
 
         virtual const variable Evaluate(const variable& s) = 0;
 

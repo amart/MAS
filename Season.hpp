@@ -33,11 +33,12 @@
 #ifndef SEASON_HPP
 #define SEASON_HPP
 
+#include "Common.hpp"
+
 namespace mas {
 
     template<typename REAL_T>
-    struct Season {
-        int id;
+    struct Season : mas::ModelObject<REAL_T> {
         std::string name;
         int months;
 

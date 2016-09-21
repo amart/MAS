@@ -4,6 +4,7 @@
     "movement_type": "natal_homing",
     "data": "/Users/matthewsupernaw/BluefinData.nc",
     "years": 10,
+    "ages":[1,2,3,4,5,6,7,8,9,10],
     "first_year": 1995,
     "last_year": 2005,
     "season": {
@@ -132,11 +133,29 @@
                     [0.3, 0.7],
                     [0.3, 0.7]]
             },
+    "mortality": {
+        "id": 1,
+        "parameters": {
+            "male": {
+                "estimated": "false",
+                "values": [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+                "min": [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+                "max": [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3]
+            },
+            "female": {
+                "estimated": "false",
+                "values": [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+                "min": [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+                "max": [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3]
+            }
+        }
+    },
     "area": {
         "id": 1,
         "name": "alpha",
         "recruitment_model": 1,
         "growth_model": 1,
+        "mortality_model": 1,
         "fecundity_model": 1
     },
     "area": {
@@ -144,13 +163,14 @@
         "name": "bravo",
         "recruitment_model": 1,
         "growth_model": 1,
+        "mortality_model": 1,
         "fecundity_model": 1
     },
     "population": {
         "id": 1,
         "name": "pop1",
         "natal_area": 1,
-        "movement_model": 1,
+        "movement": [{"season":1,"movement_model":1},{"season":2,"movement_model":1}],
         "recruitment_type": "natal",
         "parameters": {
             "initial_numbers": {
@@ -173,12 +193,12 @@
         "id": 2,
         "name": "pop2",
         "natal_area": 2,
-        "movement_model": 2,
+        "movement": [{"season":1,"movement_model":1},{"season":2,"movement_model":1}],
         "recruitment_type": "natal",
         "parameters": {
             "initial_numbers": {
                 "male": {
-                    "value": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    "value": [1, 2, 3,4, 5, 6, 7, 8, 9, 10],
                     "min": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                     "max": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                     "estimated": "true"

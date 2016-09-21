@@ -16,6 +16,7 @@
 
 #include "../AutoDiff_Standalone/AutoDiff/AutoDiff.hpp"
 
+#include <vector>
 
 namespace mas {
 
@@ -26,10 +27,10 @@ namespace mas {
         typedef atl::Variable<REAL_T> variable;
 
         static void SetName(variable& var, const std::string& value) {
-            std::cout<<value<<"\n";
+            std::cout << value << "\n";
             var.SetName(value);
         }
-        
+
         static void SetValue(variable& var, const REAL_T& value) {
             var.SetValue(value);
         }
@@ -40,6 +41,19 @@ namespace mas {
 
         static void SetMaxBoundary(variable& var, const REAL_T& value) {
             var.SetMaxBoundary(value);
+        }
+    };
+
+    template<typename REAL_T>
+    struct ModelObject {
+        typedef typename VariableTrait<REAL_T>::variable variable;
+        int id;
+        std::vector<variable*> estimated_parameters;
+        std::vector<int> estimated_phase;
+
+        void Register(variable& var, int phase = 1) {
+            this->estimated_parameters.push_back(&var);
+            this->estimated_phase.push_back(phase);
         }
     };
 }

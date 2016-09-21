@@ -33,10 +33,12 @@
 #ifndef MAS_FECUNDITY_HPP
 #define MAS_FECUNDITY_HPP
 
+#include "Common.hpp"
+
 namespace mas {
 
     template<typename REAL_T>
-    struct FecundityBase {
+    struct FecundityBase : mas::ModelObject<REAL_T> {
    
 
     };

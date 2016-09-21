@@ -36,8 +36,12 @@
 namespace mas {
 
     template<typename REAL_T>
-    struct MortalityBase {
-   
+    struct Mortality : mas::ModelObject<REAL_T> {
+        typedef typename VariableTrait<REAL_T>::variable variable;
+        std::vector<variable> male_mortality;
+        std::vector<variable> female_mortality;
+
+     
 
     };
 
