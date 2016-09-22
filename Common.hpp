@@ -17,6 +17,7 @@
 #include "../AutoDiff_Standalone/AutoDiff/AutoDiff.hpp"
 
 #include <vector>
+#include <map>
 
 namespace mas {
 
@@ -27,7 +28,6 @@ namespace mas {
         typedef atl::Variable<REAL_T> variable;
 
         static void SetName(variable& var, const std::string& value) {
-            std::cout << value << "\n";
             var.SetName(value);
         }
 
@@ -48,10 +48,13 @@ namespace mas {
     struct ModelObject {
         typedef typename VariableTrait<REAL_T>::variable variable;
         int id;
+        std::map<variable*,int> estimated_parameters_map;
+        typedef typename std::map<variable*,int>::iterator estimable_parameter_iterator; 
         std::vector<variable*> estimated_parameters;
         std::vector<int> estimated_phase;
 
         void Register(variable& var, int phase = 1) {
+            estimated_parameters_map[&var] = phase;
             this->estimated_parameters.push_back(&var);
             this->estimated_phase.push_back(phase);
         }

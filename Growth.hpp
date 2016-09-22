@@ -42,11 +42,13 @@ namespace mas {
         typedef typename VariableTrait<REAL_T>::variable variable;
         variable a_min;
         variable a_max;
-      
+
 
         virtual const variable Evaluate(const variable& age) = 0;
 
-
+        virtual const std::string Name() {
+            return "GrowthBase";
+        }
 
     };
 
@@ -58,6 +60,10 @@ namespace mas {
 
         const variable Evaluate(const variable& age) {
             return l_inf * (static_cast<REAL_T> (1.0) - atl::exp(-k * (age - this->a_min)));
+        }
+
+        virtual const std::string Name() {
+            return "Von Bertalanffy";
         }
     };
 
@@ -75,6 +81,10 @@ namespace mas {
                     (static_cast<REAL_T> (1.0) - atl::exp(-alpha * (this->a_max - this->a_min)))),
                     static_cast<REAL_T> (1.0) / beta);
         }
+
+        virtual const std::string Name() {
+            return "Schnute Case I";
+        }
     };
 
     template<typename REAL_T>
@@ -88,6 +98,10 @@ namespace mas {
             return lmin * atl::exp(atl::log(lmax / lmin)*
                     ((static_cast<REAL_T> (1.0) - atl::exp(-alpha * (age - this->a_min))) /
                     (static_cast<REAL_T> (1.0) - atl::exp(-alpha * (this->a_max - this->a_min)))));
+        }
+
+        virtual const std::string Name() {
+            return "Schnute Case II";
         }
     };
 
@@ -105,6 +119,10 @@ namespace mas {
                     (static_cast<REAL_T> (1.0) - (this->a_max - this->a_min))),
                     static_cast<REAL_T> (1.0) / beta);
         }
+
+        virtual const std::string Name() {
+            return "Schnute Case III";
+        }
     };
 
     template<typename REAL_T>
@@ -119,6 +137,10 @@ namespace mas {
             return lmin * atl::exp(atl::log(lmax / lmin)*
                     ((static_cast<REAL_T> (1.0) - (age - this->a_min)) /
                     (static_cast<REAL_T> (1.0) - (this->a_max - this->a_min))));
+        }
+
+        virtual const std::string Name() {
+            return "Schnute Case IV";
         }
     };
 

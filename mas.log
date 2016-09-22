@@ -1,2 +1,97 @@
-MAS Run: Wed Sep 21 14:09:37 2016
+MAS Run: Thu Sep 22 13:35:06 2016
 
+Estimated Parameters						Phase
+
+Recruitment:
+beverton_holt_alpha_1						1
+beverton_holt_beta_1						1
+
+Growth:
+von_bertalanffy_amin_1						2
+von_bertalanffy_amax_1						1
+
+Selectivity:
+logistic_a50_1						1
+logistic_s_1						1
+
+Movement:
+male_connectivity[0][0]_2						1
+male_connectivity[0][1]_2						1
+male_connectivity[1][0]_2						1
+male_connectivity[1][1]_2						1
+male_connectivity[2][0]_2						1
+male_connectivity[2][1]_2						1
+male_connectivity[3][0]_2						1
+male_connectivity[3][1]_2						1
+male_connectivity[4][0]_2						1
+male_connectivity[4][1]_2						1
+male_connectivity[5][0]_2						1
+male_connectivity[5][1]_2						1
+male_connectivity[6][0]_2						1
+male_connectivity[6][1]_2						1
+male_connectivity[7][0]_2						1
+male_connectivity[7][1]_2						1
+male_connectivity[8][0]_2						1
+male_connectivity[8][1]_2						1
+male_connectivity[9][0]_2						1
+male_connectivity[9][1]_2						1
+female_connectivity[0][0]_2						1
+female_connectivity[0][1]_2						1
+female_connectivity[1][0]_2						1
+female_connectivity[1][1]_2						1
+female_connectivity[2][0]_2						1
+female_connectivity[2][1]_2						1
+female_connectivity[3][0]_2						1
+female_connectivity[3][1]_2						1
+female_connectivity[4][0]_2						1
+female_connectivity[4][1]_2						1
+female_connectivity[5][0]_2						1
+female_connectivity[5][1]_2						1
+female_connectivity[6][0]_2						1
+female_connectivity[6][1]_2						1
+female_connectivity[7][0]_2						1
+female_connectivity[7][1]_2						1
+female_connectivity[8][0]_2						1
+female_connectivity[8][1]_2						1
+female_connectivity[9][0]_2						1
+female_connectivity[9][1]_2						1
+male_connectivity[0][0]_1						1
+male_connectivity[0][1]_1						1
+male_connectivity[1][0]_1						1
+male_connectivity[1][1]_1						1
+male_connectivity[2][0]_1						1
+male_connectivity[2][1]_1						1
+male_connectivity[3][0]_1						1
+male_connectivity[3][1]_1						1
+male_connectivity[4][0]_1						1
+male_connectivity[4][1]_1						1
+male_connectivity[5][0]_1						1
+male_connectivity[5][1]_1						1
+male_connectivity[6][0]_1						1
+male_connectivity[6][1]_1						1
+male_connectivity[7][0]_1						1
+male_connectivity[7][1]_1						1
+male_connectivity[8][0]_1						1
+male_connectivity[8][1]_1						1
+male_connectivity[9][0]_1						1
+male_connectivity[9][1]_1						1
+female_connectivity[0][0]_1						1
+female_connectivity[0][1]_1						1
+female_connectivity[1][0]_1						1
+female_connectivity[1][1]_1						1
+female_connectivity[2][0]_1						1
+female_connectivity[2][1]_1						1
+female_connectivity[3][0]_1						1
+female_connectivity[3][1]_1						1
+female_connectivity[4][0]_1						1
+female_connectivity[4][1]_1						1
+female_connectivity[5][0]_1						1
+female_connectivity[5][1]_1						1
+female_connectivity[6][0]_1						1
+female_connectivity[6][1]_1						1
+female_connectivity[7][0]_1						1
+female_connectivity[7][1]_1						1
+female_connectivity[8][0]_1						1
+female_connectivity[8][1]_1						1
+female_connectivity[9][0]_1						1
+female_connectivity[9][1]_1						1

@@ -42,7 +42,7 @@ namespace mas {
         bool natal_homing = false;
         std::shared_ptr<Area<REAL_T> > area;
         std::shared_ptr<Area<REAL_T> > natal_area;
-        
+
         int years;
         int seasons;
         std::vector<REAL_T> ages;
@@ -149,7 +149,7 @@ namespace mas {
         int years;
         int seasons;
         int areas;
-        
+
         std::shared_ptr<Area<REAL_T> > natal_area; //birth area
         std::vector<std::shared_ptr<Area<REAL_T> > > areas_list; //all areas
 
@@ -157,10 +157,10 @@ namespace mas {
         typedef typename std::unordered_map<int, PopulationInfo<REAL_T> >::iterator cohort_iterator;
         std::unordered_map<int, PopulationInfo<REAL_T> > male_cohorts;
         std::unordered_map<int, PopulationInfo<REAL_T> > female_cohorts;
-        std::unordered_map<int, int > movement_models_ids;//season keyed
+        std::unordered_map<int, int > movement_models_ids; //season keyed
         typedef typename std::unordered_map<int, int >::iterator movement_model_id_iterator;
-        
-        std::unordered_map<int, std::shared_ptr<mas::Movement<REAL_T> > > movement_models;//season keyed
+
+        std::unordered_map<int, std::shared_ptr<mas::Movement<REAL_T> > > movement_models; //season keyed
         //Estimable
         std::vector<std::vector<variable> > movement_coefficients;
         std::vector<variable> initial_population_males;
@@ -290,6 +290,21 @@ namespace mas {
         }
 
     };
+
+    template<typename REAL_T>
+    std::ostream& operator<<(std::ostream& out, const mas::Population<REAL_T>& pop) {
+        out << "Population:\n";
+        out << "Name: " << pop.name << "\n";
+        out << "Id: " << pop.id << "\n";
+        out << "Natal Area: " << pop.natal_area->id << "\n";
+        out << "Movement Areas: ";
+        for (int i = 0; i < pop.areas_list.size(); i++) {
+            out << pop.areas_list[i]->id << " ";
+        }
+        out << "\n";
+
+        return out;
+    }
 
 }
 

@@ -38,11 +38,15 @@
 namespace mas {
 
     template<typename REAL_T>
-    struct SelectivityBase : mas::ModelObject<REAL_T>{
+    struct SelectivityBase : mas::ModelObject<REAL_T> {
         typedef typename VariableTrait<REAL_T>::variable variable;
 
 
         virtual const variable Evaluate(const variable& age) = 0;
+
+        virtual const std::string Name() {
+            return "SelectivityBase";
+        }
 
     };
 
@@ -59,6 +63,10 @@ namespace mas {
          */
         virtual const variable Evaluate(const variable& a) {
             return static_cast<REAL_T> (1.0) / (static_cast<REAL_T> (1.0) + std::exp(-s * (a - a50)));
+        }
+
+        virtual const std::string Name() {
+            return "Logistic";
         }
 
     };
@@ -83,6 +91,10 @@ namespace mas {
                     (static_cast<REAL_T> (1.0) - (static_cast<REAL_T> (1.0) /
                     (static_cast<REAL_T> (1.0) +
                     std::exp(-beta_desc * (a - alpha_desc)))));
+        }
+
+        virtual const std::string Name() {
+            return "Double Logistic";
         }
 
     };

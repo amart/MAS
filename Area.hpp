@@ -40,19 +40,33 @@ namespace mas {
 
     template<typename REAL_T>
     struct Area {
+        std::string name;
         int id;
         int growth_model_id;
         int recruitment_model_id;
         int mortality_model_id;
         int fecundity_model_id;
         
-        std::string name;
+        
         std::shared_ptr<GrowthBase<REAL_T> > growth_model;
         std::shared_ptr<RecruitmentBase<REAL_T> > recruitment_model;
         std::shared_ptr<Mortality<REAL_T> > mortality_model;
         std::shared_ptr<FecundityBase<REAL_T> > fecundity_model;
 
     };
+    
+    template<typename REAL_T>
+    std::ostream& operator << (std::ostream& out, const mas::Area<REAL_T>& area){
+     
+        out<<"Area:\n";
+        out<<"Name: "<<area.name<<"\n";
+        out<<"Id: "<<area.id<<"\n";
+        out<<"Growth Model: "<<area.growth_model->id<<"\n";
+        out<<"Recruitment Model: "<<area.recruitment_model->id<<"\n";
+        out<<"Mortality Model: "<<area.mortality_model->id<<"\n\n";
+        
+        return out;
+    }
 
 
 }

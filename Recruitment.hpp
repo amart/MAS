@@ -36,12 +36,15 @@
 namespace mas {
 
     template<typename REAL_T>
-    struct RecruitmentBase : mas::ModelObject<REAL_T>{
+    struct RecruitmentBase : mas::ModelObject<REAL_T> {
         typedef typename mas::VariableTrait<REAL_T>::variable variable;
-       
+
 
         virtual const variable Evaluate(const variable& s) = 0;
 
+        virtual const std::string Name() {
+            return "RecruitmentBase";
+        }
     };
 
     template<typename REAL_T>
@@ -52,6 +55,10 @@ namespace mas {
 
         const variable Evaluate(const variable& s) {
             return alpha * s * std::exp(static_cast<REAL_T> (-1.0) * beta * s);
+        }
+
+        virtual const std::string Name() {
+            return "Ricker";
         }
     };
 
@@ -71,6 +78,10 @@ namespace mas {
             return (s / phi0) * std::exp(A * (static_cast<REAL_T> (1.0)
                     - (s / (phi0 * R0))));
         }
+
+        virtual const std::string Name() {
+            return "Ricker Alt";
+        }
     };
 
     template<typename REAL_T>
@@ -87,6 +98,10 @@ namespace mas {
          */
         const variable Evaluate(const variable& s) {
             return (alpha * s) / (beta + s);
+        }
+
+        virtual const std::string Name() {
+            return "Beverton-Holt";
         }
     };
 
@@ -109,6 +124,10 @@ namespace mas {
                     (s * (static_cast<REAL_T> (5.0) * h
                     - static_cast<REAL_T> (1.0))));
         }
+
+        virtual const std::string Name() {
+            return "Beverton-Holt Alt";
+        }
     };
 
     template<typename REAL_T>
@@ -128,6 +147,10 @@ namespace mas {
             variable s_c = std::pow(s, c);
             return (alpha * s_c) / (beta + s_c);
         }
+
+        virtual const std::string Name() {
+            return "Beverton-Holt Dep";
+        }
     };
 
     template<typename REAL_T>
@@ -140,6 +163,10 @@ namespace mas {
         const variable Evaluate(const variable& s) {
             return (alpha * s) / (static_cast<REAL_T> (1.0) + std::pow((s / beta), c));
         }
+
+        virtual const std::string Name() {
+            return "Shepard";
+        }
     };
 
     template<typename REAL_T>
@@ -151,6 +178,10 @@ namespace mas {
 
         const variable Evaluate(const variable& s) {
             return (alpha * s) * std::pow((static_cast<REAL_T> (1.0) - beta * c * s), static_cast<REAL_T> (1.0) / c);
+        }
+
+        virtual const std::string Name() {
+            return "Deriso";
         }
     };
 

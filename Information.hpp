@@ -45,7 +45,7 @@
 namespace mas {
 
     template<typename REAL_T>
-    class Information {
+    class Information : public mas::ModelObject<REAL_T> {
         typedef typename VariableTrait<REAL_T>::variable variable;
 
 
@@ -368,6 +368,7 @@ namespace mas {
                 }
 
                 if (estimated) {
+                    phase = 1;
                     rit = (*mortality_model).value.FindMember("phase");
                     if (rit != (*mortality_model).value.MemberEnd()) {
                         phase = (*rit).value.GetInt();
@@ -491,6 +492,7 @@ namespace mas {
             }
 
             if (estimated) {
+                phase = 1;
                 rit = (*movement_model).value.FindMember("phase");
                 if (rit != (*movement_model).value.MemberEnd()) {
                     phase = (*rit).value.GetInt();
@@ -801,6 +803,7 @@ namespace mas {
                 }
 
                 if (estimated) {
+                    phase = 1;
                     v_it = (*m_it).value.FindMember("phase");
                     if (v_it != (*m_it).value.MemberEnd()) {
                         phase = (*v_it).value.GetInt();
@@ -914,6 +917,7 @@ namespace mas {
                 }
 
                 if (estimated) {
+                    phase = 1;
                     v_it = (*m_it).value.FindMember("phase");
                     if (v_it != (*m_it).value.MemberEnd()) {
                         phase = (*v_it).value.GetInt();
@@ -1112,6 +1116,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -1164,6 +1169,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -1248,6 +1254,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -1300,6 +1307,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -1352,6 +1360,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -1404,6 +1413,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -1527,6 +1537,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -1580,6 +1591,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -1663,6 +1675,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -1713,6 +1726,7 @@ namespace mas {
                             }
 
                             if (estimated) {
+                                phase = 1;
                                 pm = (*ppit).value.FindMember("phase");
                                 if (pm != (*ppit).value.MemberEnd()) {
                                     phase = (*pm).value.GetInt();
@@ -1765,6 +1779,7 @@ namespace mas {
                             }
 
                             if (estimated) {
+                                phase = 1;
                                 pm = (*ppit).value.FindMember("phase");
                                 if (pm != (*ppit).value.MemberEnd()) {
                                     phase = (*pm).value.GetInt();
@@ -1817,6 +1832,7 @@ namespace mas {
                             }
 
                             if (estimated) {
+                                phase = 1;
                                 pm = (*ppit).value.FindMember("phase");
                                 if (pm != (*ppit).value.MemberEnd()) {
                                     phase = (*pm).value.GetInt();
@@ -1893,6 +1909,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -1944,6 +1961,7 @@ namespace mas {
                             }
 
                             if (estimated) {
+                                phase = 1;
                                 pm = (*ppit).value.FindMember("phase");
                                 if (pm != (*ppit).value.MemberEnd()) {
                                     phase = (*pm).value.GetInt();
@@ -1996,6 +2014,7 @@ namespace mas {
                             }
 
                             if (estimated) {
+                                phase = 1;
                                 pm = (*ppit).value.FindMember("phase");
                                 if (pm != (*ppit).value.MemberEnd()) {
                                     phase = (*pm).value.GetInt();
@@ -2076,6 +2095,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -2126,6 +2146,7 @@ namespace mas {
                             }
 
                             if (estimated) {
+                                phase = 1;
                                 pm = (*ppit).value.FindMember("phase");
                                 if (pm != (*ppit).value.MemberEnd()) {
                                     phase = (*pm).value.GetInt();
@@ -2178,6 +2199,7 @@ namespace mas {
                             }
 
                             if (estimated) {
+                                phase = 1;
                                 pm = (*ppit).value.FindMember("phase");
                                 if (pm != (*ppit).value.MemberEnd()) {
                                     phase = (*pm).value.GetInt();
@@ -2230,6 +2252,7 @@ namespace mas {
                             }
 
                             if (estimated) {
+                                phase = 1;
                                 pm = (*ppit).value.FindMember("phase");
                                 if (pm != (*ppit).value.MemberEnd()) {
                                     phase = (*pm).value.GetInt();
@@ -2311,6 +2334,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -2361,6 +2385,7 @@ namespace mas {
                             }
 
                             if (estimated) {
+                                phase = 1;
                                 pm = (*ppit).value.FindMember("phase");
                                 if (pm != (*ppit).value.MemberEnd()) {
                                     phase = (*pm).value.GetInt();
@@ -2413,6 +2438,7 @@ namespace mas {
                             }
 
                             if (estimated) {
+                                phase = 1;
                                 pm = (*ppit).value.FindMember("phase");
                                 if (pm != (*ppit).value.MemberEnd()) {
                                     phase = (*pm).value.GetInt();
@@ -2465,6 +2491,7 @@ namespace mas {
                             }
 
                             if (estimated) {
+                                phase = 1;
                                 pm = (*ppit).value.FindMember("phase");
                                 if (pm != (*ppit).value.MemberEnd()) {
                                     phase = (*pm).value.GetInt();
@@ -2523,6 +2550,7 @@ namespace mas {
                 }
 
                 if (estimated) {
+                    phase = 1;
                     pm = (*amin_it).value.FindMember("phase");
                     if (pm != (*amin_it).value.MemberEnd()) {
                         phase = (*pm).value.GetInt();
@@ -2533,7 +2561,7 @@ namespace mas {
                 }
             }
 
-            rapidjson::Document::MemberIterator amax_it = (*pit).value.FindMember("amin");
+            rapidjson::Document::MemberIterator amax_it = (*pit).value.FindMember("amax");
 
             if (amax_it == (*pit).value.MemberEnd()) {
                 std::cout << "Configuration Error: Growth is required to have a amax specified.\n";
@@ -2573,6 +2601,7 @@ namespace mas {
                 }
 
                 if (estimated) {
+                    phase = 1;
                     pm = (*amax_it).value.FindMember("phase");
                     if (pm != (*amax_it).value.MemberEnd()) {
                         phase = (*pm).value.GetInt();
@@ -2593,7 +2622,7 @@ namespace mas {
                 mas::mas_log << "Configuration Error: More than one growth model with the same identifier defined. Growth models require a unique id.\n";
 
                 this->valid_configuration = false;
-                ;
+
             } else {
                 this->growth_models[model->id] = model;
             }
@@ -2687,6 +2716,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -2739,6 +2769,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -2814,6 +2845,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -2866,6 +2898,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -2918,6 +2951,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -2991,6 +3025,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3043,6 +3078,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3095,6 +3131,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3166,6 +3203,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3218,6 +3256,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3292,6 +3331,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3344,6 +3384,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3396,6 +3437,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3468,6 +3510,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3520,6 +3563,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3572,6 +3616,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3645,6 +3690,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3697,6 +3743,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3749,6 +3796,7 @@ namespace mas {
                         }
 
                         if (estimated) {
+                            phase = 1;
                             pm = (*ppit).value.FindMember("phase");
                             if (pm != (*ppit).value.MemberEnd()) {
                                 phase = (*pm).value.GetInt();
@@ -3863,6 +3911,7 @@ namespace mas {
                 }
 #warning Add fecundity model here?
 
+                std::cout << *area;
 
             }
 
@@ -3892,6 +3941,7 @@ namespace mas {
                 }
 
                 for (ait = this->areas.begin(); ait != this->areas.end(); ++ait) {
+                    population->areas_list.push_back((*ait).second);
                     mas::PopulationInfo<REAL_T>& male_pop_info = population->male_cohorts[(*ait).second->id];
                     male_pop_info.natal_area = population->natal_area;
                     male_pop_info.area = (*ait).second;
@@ -3926,13 +3976,67 @@ namespace mas {
 
                 }
 
+
+                std::cout << *population << "\n";
             }
 
             this->nseasons = this->seasons.size();
 
+            mas_log << "Estimated Parameters\t\t\t\t\t\tPhase\n";
+            mas_log << "\nRecruitment:\n";
+            recruitment_model_iterator rit;
+            for (rit = this->recruitment_models.begin(); rit != this->recruitment_models.end(); ++rit) {
+                typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
+                for (it = (*rit).second->estimated_parameters_map.begin(); it != (*rit).second->estimated_parameters_map.end(); ++it) {
+                    mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
+                    this->Register(*(*it).first,(*it).second);
+                }
+
+            }
+            mas_log << "\nGrowth:\n";
+            growth_model_iterator git;
+            for (git = this->growth_models.begin(); git != this->growth_models.end(); ++git) {
+                typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
+                for (it = (*git).second->estimated_parameters_map.begin(); it != (*git).second->estimated_parameters_map.end(); ++it) {
+                    mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
+                     this->Register(*(*it).first,(*it).second);
+                }
+
+            }
+
+            mas_log << "\nSelectivity:\n";
+            selectivity_model_iterator sit;
+            for (sit = this->selectivity_models.begin(); sit != this->selectivity_models.end(); ++sit) {
+                typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
+                for (it = (*sit).second->estimated_parameters_map.begin(); it != (*sit).second->estimated_parameters_map.end(); ++it) {
+                    mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
+                     this->Register(*(*it).first,(*it).second);
+                }
+
+            }
+
+            mas_log << "\nMovement:\n";
+            movement_model_iterator mit;
+            for (mit = this->movement_models.begin(); mit != this->movement_models.end(); ++mit) {
+                typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
+                for (it = (*mit).second->estimated_parameters_map.begin(); it != (*mit).second->estimated_parameters_map.end(); ++it) {
+                    mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
+                     this->Register(*(*it).first,(*it).second);
+                }
+
+            }
+            std::cout<<"Estimated parameters:\n";
+             typename mas::ModelObject<REAL_T>::estimable_parameter_iterator eit;
+            for(eit = this->estimated_parameters_map.begin(); eit != this->estimated_parameters_map.end(); ++eit){
+                std::cout<<(*eit).first->GetName()<<" "<<(*eit).second<<"\n";
+            }
+
+
+
             if (!this->valid_configuration) {
                 std::cout << "Configuration Error:  Invalid model configuration. See mas.log for errors.\n";
                 mas_log << "Configuration Error:  Invalid model configuration. See mas.log for errors.\n";
+                exit(0);
             }
 
         }

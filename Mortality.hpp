@@ -41,7 +41,9 @@ namespace mas {
         std::vector<variable> male_mortality;
         std::vector<variable> female_mortality;
 
-     
+        virtual const std::string Name() {
+            return "Natural Mortality";
+        }
 
     };
 

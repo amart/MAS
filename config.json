@@ -39,13 +39,14 @@
                 "value": 2.08333,
                 "min": 2.08333,
                 "max": 2.08333,
-                "estimated": "false"
+                "phase":2,
+                "estimated": "true"
             },
             "amax": {
                 "value": 30.08333,
                 "min": 30.08333,
                 "max": 30.08333,
-                "estimated": "false"
+                "estimated": "true"
             },
             "k": {
                 "value": 30.08333,
