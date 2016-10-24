@@ -50,6 +50,9 @@ namespace mas {
         int seasons;
         std::vector<REAL_T> ages;
 
+        std::vector<variable> recruitment;
+        std::vector<variable> abundance;
+         std::vector<variable> spawning_biomass;
         std::vector<variable> M;
         std::vector<variable> initial_numbers;
         std::vector<variable> F;
@@ -58,15 +61,17 @@ namespace mas {
         std::vector<variable> N;
         std::vector<variable> C;
         std::vector<variable> predicted_N;
-        variable abundance;
+      
 
         void Initialize() {
+            recruitment.resize(years-1);
+            abundance.resize(years-1);
             F.resize(years * seasons * ages.size());
             Z.resize(years * seasons * ages.size());
             S.resize(years * seasons * ages.size());
             N.resize(years * seasons * ages.size());
             predicted_N.resize(years * seasons * ages.size());
-            abundance = 10.0;
+           
         }
 
         /**
@@ -77,16 +82,18 @@ namespace mas {
          */
         inline void Recruitment(int year, int season) {
 
-            if (natal_homing) {
-                if (natal_area->id == area->id) {
-                    //do spawn and recruitment for natal area
-                    std::cout << this->natal_area->recruitment_model->Evaluate(this->abundance) << "\n";
-
-                }
-            } else {
-                //do spawn and recruitment for current area
-                //                std::cout << this->area->recruitment_model->Evaluate(this->abundance) << "\n";
-            }
+            
+            
+//            if (natal_homing) {
+//                if (natal_area->id == area->id) {
+//                    //do spawn and recruitment for natal area
+//                    std::cout << this->natal_area->recruitment_model->Evaluate(this->abundance) << "\n";
+//
+//                }
+//            } else {
+//                //do spawn and recruitment for current area
+//                //                std::cout << this->area->recruitment_model->Evaluate(this->abundance) << "\n";
+//            }
         }
 
         /**
