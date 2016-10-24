@@ -450,7 +450,6 @@ namespace mas {
                 this->valid_configuration = false;
 
             } else {
-                std::cout << "inserting natural mortality " << model->id << "\n";
                 this->natural_mortality_models[model->id] = model;
             }
 
@@ -925,7 +924,6 @@ namespace mas {
                     int m = 0;
                     std::string sex = "NA";
 
-                    std::cout << "size nm ->" << (*in_it).value.Size() << "\n";
                     for (int i = 0; i < (*in_it).value.Size(); i++) {
                         rapidjson::Value& v = (*in_it).value[i];
                         m = 0;
@@ -959,14 +957,10 @@ namespace mas {
                             //                            this->valid_configuration = false;
                         }
 
-                        std::cout << "pop = " << model->id << "\n";
-                        std::cout << "area = " << a << "\n";
-                        std::cout << "natural mortality model = " << m << "\n";
+                        
                         if (sex == "female") {
-                            std::cout << "sex = female\n";
                             model->female_natural_mortality_ids[a] = m;
                         } else {
-                            std::cout << "sex = male\n";
                             model->male_natural_mortality_ids[a] = m;
                         }
 
@@ -4306,9 +4300,7 @@ namespace mas {
                     area->mortality_model = (*mit).second;
 
                 }
-#warning Add fecundity model here?
 
-                std::cout << *area;
 
             }
 
@@ -4332,7 +4324,6 @@ namespace mas {
                 //                    this->valid_configuration = false;
                 //                }
 
-                std::cout << "areas size = " << areas.size() << "\n";
                 area_iterator ait = this->areas.find(population->natal_area_id);
 
                 if (ait != this->areas.end()) {
@@ -4355,7 +4346,6 @@ namespace mas {
 
                     if (mit != population->male_natural_mortality_ids.end()) {
                         male_pop_info.natural_mortality = this->natural_mortality_models[(*mit).second];
-                        std::cout << "Retrieving natural mortality " << male_pop_info.natural_mortality->id << "\n";
                     } else {
                         std::cout << "Configuration Error: Male natural mortality for population " << population->id << " in area " << male_pop_info.area->id << " has not been defined.\n";
                         mas_log << "Configuration Error: Male natural mortality for population " << population->id << " in area " << male_pop_info.area->id << " has not been defined.\n";
@@ -4379,7 +4369,6 @@ namespace mas {
 
                     if (fit != population->female_natural_mortality_ids.end()) {
                         female_pop_info.natural_mortality = this->natural_mortality_models[(*fit).second];
-                        std::cout << "Retrieving natural mortality " << female_pop_info.natural_mortality->id << "\n";
                     } else {
                         std::cout << "Configuration Error: Female natural mortality for population " << population->id << " in area " << male_pop_info.area->id << " has not been defined.\n";
                         mas_log << "Configuration Error: Female natural mortality for population " << population->id << " in area " << male_pop_info.area->id << " has not been defined.\n";
@@ -4409,8 +4398,6 @@ namespace mas {
 
                 }
 
-
-                std::cout << *population << "\n";
             }
 
             //            this->nseasons = this->seasons.size();
@@ -4484,13 +4471,11 @@ namespace mas {
 
 
 
-            std::cout << "number of fleets = " << this->fleets.size() << "\n";
 
 
             fleet_iterator fit;
             for (fit = this->fleets.begin(); fit != this->fleets.end(); ++fit) {
                 typename Fleet<REAL_T>::season_area_id_iterator sit;
-                std::cout << "season_area_selectivity_ids = " << (*fit).second->season_area_selectivity_ids.size() << "\n";
                 for (sit = (*fit).second->season_area_selectivity_ids.begin(); sit != (*fit).second->season_area_selectivity_ids.end(); ++sit) {
                     typename Fleet<REAL_T>::area_id_iteraor ait;
                     int season = (*sit).first;
@@ -4502,7 +4487,6 @@ namespace mas {
                     }
                 }
 
-                std::cout << "season_area_fishing_mortality_ids = " << (*fit).second->season_area_fishing_mortality_ids.size() << "\n";
                 for (sit = (*fit).second->season_area_fishing_mortality_ids.begin(); sit != (*fit).second->season_area_fishing_mortality_ids.end(); ++sit) {
                     typename Fleet<REAL_T>::area_id_iteraor ait;
                     int season = (*sit).first;
@@ -4513,7 +4497,6 @@ namespace mas {
                         (*fit).second->season_area_fishing_mortality[season][area] = this->finshing_mortality_models[id];
                         this->areas[area]->seasonal_fleet_operations[season].push_back((*fit).second);
 
-                        std::cout << "Area " << area << " season " << season << " " << (*fit).second->id << ", nfleets = " << this->areas[area]->seasonal_fleet_operations[season].size() << "\n";
                     }
                 }
 
@@ -4543,11 +4526,11 @@ namespace mas {
             //            }
 
 
-            std::cout << "Estimated parameters:\n";
-            typename mas::ModelObject<REAL_T>::estimable_parameter_iterator eit;
-            for (eit = this->estimated_parameters_map.begin(); eit != this->estimated_parameters_map.end(); ++eit) {
-                std::cout << (*eit).first->GetName() << " " << (*eit).second << "\n";
-            }
+//            std::cout << "Estimated parameters:\n";
+//            typename mas::ModelObject<REAL_T>::estimable_parameter_iterator eit;
+//            for (eit = this->estimated_parameters_map.begin(); eit != this->estimated_parameters_map.end(); ++eit) {
+//                std::cout << (*eit).first->GetName() << " " << (*eit).second << "\n";
+//            }
 
 
 

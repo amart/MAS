@@ -52,7 +52,7 @@ namespace mas {
 
         std::vector<variable> recruitment;
         std::vector<variable> abundance;
-         std::vector<variable> spawning_biomass;
+        std::vector<variable> spawning_biomass;
         std::vector<variable> M;
         std::vector<variable> initial_numbers;
         std::vector<variable> F;
@@ -61,17 +61,16 @@ namespace mas {
         std::vector<variable> N;
         std::vector<variable> C;
         std::vector<variable> predicted_N;
-      
 
         void Initialize() {
-            recruitment.resize(years-1);
-            abundance.resize(years-1);
+            recruitment.resize(years - 1);
+            abundance.resize(years - 1);
             F.resize(years * seasons * ages.size());
             Z.resize(years * seasons * ages.size());
             S.resize(years * seasons * ages.size());
             N.resize(years * seasons * ages.size());
             predicted_N.resize(years * seasons * ages.size());
-           
+
         }
 
         /**
@@ -82,18 +81,18 @@ namespace mas {
          */
         inline void Recruitment(int year, int season) {
 
-            
-            
-//            if (natal_homing) {
-//                if (natal_area->id == area->id) {
-//                    //do spawn and recruitment for natal area
-//                    std::cout << this->natal_area->recruitment_model->Evaluate(this->abundance) << "\n";
-//
-//                }
-//            } else {
-//                //do spawn and recruitment for current area
-//                //                std::cout << this->area->recruitment_model->Evaluate(this->abundance) << "\n";
-//            }
+
+
+            //            if (natal_homing) {
+            //                if (natal_area->id == area->id) {
+            //                    //do spawn and recruitment for natal area
+            //                    std::cout << this->natal_area->recruitment_model->Evaluate(this->abundance) << "\n";
+            //
+            //                }
+            //            } else {
+            //                //do spawn and recruitment for current area
+            //                //                std::cout << this->area->recruitment_model->Evaluate(this->abundance) << "\n";
+            //            }
         }
 
         /**
@@ -117,8 +116,6 @@ namespace mas {
          * @param season
          */
         inline void Mortality(int year, int season) {
-
-            std::cout << "Population{" << this->natal_population->id << "}, Area{" << this->area->id << "}, " << year << "," << season << " ";
             std::vector< std::shared_ptr<Fleet<REAL_T> > >& fleets = this->area->seasonal_fleet_operations[season];
             for (int a = 0; a< this->ages.size(); a++) {
 
@@ -127,22 +124,11 @@ namespace mas {
                 for (int f = 0; f < fleets.size(); f++) {
                     f_a += fleets[f]->area_season_fishing_mortality[this->area->id][season]->Evaluate(year, (season - 1)) *
                             fleets[f]->season_area_selectivity[season][this->area->id]->Evaluate(ages[a]);
-                    //                    std::cout<<"f_a +="<<fleets[f]->area_season_fishing_mortality[this->area->id][season]->Evaluate(year, (season - 1))<<"*"<<
-                    //                            fleets[f]->season_area_selectivity[season][this->area->id]->Evaluate(ages[a])<<"\n";
-
                 }
-
 
                 Z[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size() + a]
                         = this->natural_mortality->Evaluate(a) + f_a;
-                //                Z_female[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size() + a]
-                //                        = this->female_natural_mortality->Evaluate(this->ages[a]) + f_a;
-                std::cout << Z[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size() + a] << " ";
-
             }
-
-            //              exit(0);
-            std::cout << "\n";
         }
 
         /**
@@ -237,7 +223,7 @@ namespace mas {
         out << std::setprecision(2);
         out << "Population " << pi.natal_population->id << "\n";
         out << "Area " << pi.area->id << "\n";
-        out<<"Total Mortality at Age (Z)\n";
+        out << "Total Mortality at Age (Z)\n";
         if (pi.male_chohorts) {
             out << "Males\n";
         } else {
@@ -350,12 +336,12 @@ namespace mas {
 
                 switch (this->initial_numbers[i].type) {
                     case MALE:
-                        std::cout << "Setting initial numbers for males in area " << this->initial_numbers[i].area_id << "\n";
+//                        std::cout << "Setting initial numbers for males in area " << this->initial_numbers[i].area_id << "\n";
                         this->male_cohorts[this->initial_numbers[i].area_id].initial_numbers = this->initial_numbers[i].values;
                         break;
 
                     case FEMALE:
-                        std::cout << "Setting initial numbers for females in area " << this->initial_numbers[i].area_id << "\n";
+//                        std::cout << "Setting initial numbers for females in area " << this->initial_numbers[i].area_id << "\n";
                         this->female_cohorts[this->initial_numbers[i].area_id].initial_numbers = this->initial_numbers[i].values;
 
                         break;
@@ -386,8 +372,6 @@ namespace mas {
             InitializePopulationinAreas();
 #warning need to iterate seasons here, rather than index
 
-            std::cout << __func__ << "-->>" << this->years << " - " << this->seasons << "\n";
-            //            exit(0);
             if (this->move_fish_before_lh) {
                 for (int y = 0; y < this->years; y++) {
                     for (int s = 1; s <= this->seasons; s++) {
