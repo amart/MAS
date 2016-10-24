@@ -62,7 +62,7 @@ namespace mas {
          * @return 
          */
         virtual const variable Evaluate(const variable& a) {
-            return static_cast<REAL_T> (1.0) / (static_cast<REAL_T> (1.0) + std::exp(-s * (a - a50)));
+            return static_cast<REAL_T> (1.0) / (static_cast<REAL_T> (1.0) + std::exp(-1.0*(a - a50)/s));
         }
 
         virtual const std::string Name() {

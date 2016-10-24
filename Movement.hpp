@@ -41,8 +41,8 @@ namespace mas {
     struct Movement : mas::ModelObject<REAL_T> {
         typedef typename VariableTrait<REAL_T>::variable variable;
         int season;
-        std::vector<std::vector<variable> > male_connectivity; //male connectivity matrix, rows must sum to 1
-        std::vector<std::vector<variable> > female_connectivity; //female connectivity matrix, rows must sum to 1
+        std::vector<std::vector<std::vector<variable> > > male_connectivity; //male connectivity matrix, rows must sum to 1
+        std::vector<std::vector<std::vector<variable> > > female_connectivity; //female connectivity matrix, rows must sum to 1
 
         virtual const std::string Name() {
             return "Box Transfer";

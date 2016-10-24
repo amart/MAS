@@ -36,6 +36,8 @@
 #include "Mortality.hpp"
 #include "Growth.hpp"
 #include "Fecundity.hpp"
+#include "Selectivity.hpp"
+#include "Fleet.hpp"
 namespace mas {
 
     template<typename REAL_T>
@@ -46,25 +48,30 @@ namespace mas {
         int recruitment_model_id;
         int mortality_model_id;
         int fecundity_model_id;
-        
-        
+
+
         std::shared_ptr<GrowthBase<REAL_T> > growth_model;
         std::shared_ptr<RecruitmentBase<REAL_T> > recruitment_model;
-        std::shared_ptr<Mortality<REAL_T> > mortality_model;
+        std::shared_ptr<NaturalMortality<REAL_T> > mortality_model;
         std::shared_ptr<FecundityBase<REAL_T> > fecundity_model;
+        std::map<int, std::vector< std::shared_ptr<Fleet<REAL_T> > > > seasonal_fleet_operations;
+
+        typedef typename std::map<int, std::vector< std::shared_ptr<Fleet<REAL_T> > > >::iterator seasonal_fleet_operations_iterator;
+
+        std::vector<DataObject<REAL_T> > data;
 
     };
-    
+
     template<typename REAL_T>
-    std::ostream& operator << (std::ostream& out, const mas::Area<REAL_T>& area){
-     
-        out<<"Area:\n";
-        out<<"Name: "<<area.name<<"\n";
-        out<<"Id: "<<area.id<<"\n";
-        out<<"Growth Model: "<<area.growth_model->id<<"\n";
-        out<<"Recruitment Model: "<<area.recruitment_model->id<<"\n";
-        out<<"Mortality Model: "<<area.mortality_model->id<<"\n\n";
-        
+    std::ostream& operator<<(std::ostream& out, const mas::Area<REAL_T>& area) {
+
+        out << "Area:\n";
+        out << "Name: " << area.name << "\n";
+        out << "Id: " << area.id << "\n";
+        out << "Growth Model: " << area.growth_model->id << "\n";
+        out << "Recruitment Model: " << area.recruitment_model->id << "\n";
+        out << "Mortality Model: " << area.mortality_model->id << "\n\n";
+
         return out;
     }
 

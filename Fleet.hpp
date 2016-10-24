@@ -41,12 +41,33 @@ namespace mas {
 
     template<typename REAL_T>
     struct Fleet : mas::ModelObject<REAL_T> {
+        typedef typename VariableTrait<REAL_T>::variable variable;
+        variable f;
         std::string name;
+
+        //area, year X season
+        //        std::map<int, std::vector<variable> > f;
+
         std::unordered_map<int, std::unordered_map<int, int> > season_area_selectivity_ids;
         std::unordered_map<int, std::unordered_map<int, std::shared_ptr<mas::SelectivityBase<REAL_T> > > > season_area_selectivity;
-        typedef typename std::unordered_map<int, std::unordered_map<int, int> >::iterator season_id_iterator;
-        typedef typename std::unordered_map<int, int>::iterator area_id_iteraor;
 
+        std::unordered_map<int, std::unordered_map<int, int> > area_season_selectivity_ids;
+        std::unordered_map<int, std::unordered_map<int, std::shared_ptr<mas::SelectivityBase<REAL_T> > > > area_season_selectivity;
+
+        std::unordered_map<int, std::unordered_map<int, int> > area_season_fishing_mortality_ids;
+        std::unordered_map<int, std::unordered_map<int, std::shared_ptr<mas::FishingMortality<REAL_T> > > > area_season_fishing_mortality;
+
+        std::unordered_map<int, std::unordered_map<int, int> > season_area_fishing_mortality_ids;
+        std::unordered_map<int, std::unordered_map<int, std::shared_ptr<mas::FishingMortality<REAL_T> > > > season_area_fishing_mortality;
+
+        typedef typename std::unordered_map<int, std::unordered_map<int, int> >::iterator season_area_selectivity_ids_iterator;
+        typedef typename std::unordered_map<int, std::shared_ptr<mas::SelectivityBase<REAL_T> > >::iterator area_sectivity_iterator;
+        typedef typename std::unordered_map<int, std::unordered_map<int, int> >::iterator season_area_id_iterator;
+        typedef typename std::unordered_map<int, int>::iterator area_id_iteraor;
+        typedef typename std::unordered_map<int, int>::iterator season_id_iteraor;
+        typedef typename std::unordered_map<int, std::unordered_map<int, std::shared_ptr<mas::SelectivityBase<REAL_T> > > >::iterator season_area_selectivity_iterator;
+        typedef typename std::unordered_map<int, std::unordered_map<int, std::shared_ptr<mas::FishingMortality<REAL_T> > > >::iterator season_area_fishing_mortality_iterator;
+        
     };
 
 

@@ -41,6 +41,9 @@
 #include "third_party/rapidjson/document.h"
 #include "Fleet.hpp"
 #include <ctime>
+#include "NetCDF.hpp"
+
+
 
 namespace mas {
 
@@ -48,6 +51,8 @@ namespace mas {
     class Information : public mas::ModelObject<REAL_T> {
         typedef typename VariableTrait<REAL_T>::variable variable;
 
+
+        std::map<int, std::map<std::string, DataObject<REAL_T> > > data_dictionary;
 
 
         std::string analyst = "NA";
@@ -72,19 +77,23 @@ namespace mas {
         std::unordered_map<int, std::shared_ptr<mas::Population<REAL_T> > > populations;
         std::unordered_map<int, std::shared_ptr<mas::GrowthBase<REAL_T> > > growth_models;
         std::unordered_map<int, std::shared_ptr<mas::RecruitmentBase<REAL_T> > > recruitment_models;
-        std::unordered_map<int, std::shared_ptr<mas::Mortality<REAL_T> > > mortality_models;
+        std::unordered_map<int, std::shared_ptr<mas::NaturalMortality<REAL_T> > > natural_mortality_models;
+        std::unordered_map<int, std::shared_ptr<mas::FishingMortality<REAL_T> > > finshing_mortality_models;
         std::unordered_map<int, std::shared_ptr<mas::FecundityBase<REAL_T> > > fecundity_models;
         std::unordered_map<int, std::shared_ptr<mas::Movement<REAL_T> > > movement_models;
         std::unordered_map<int, std::shared_ptr<mas::SelectivityBase<REAL_T> > > selectivity_models;
+        std::unordered_map<int, std::shared_ptr<mas::Fleet<REAL_T> > > fleets;
 
         //System sub model iterators
         typedef typename std::unordered_map<int, std::shared_ptr<mas::Population<REAL_T> > >::iterator population_iterator;
         typedef typename std::unordered_map<int, std::shared_ptr<mas::GrowthBase<REAL_T> > >::iterator growth_model_iterator;
         typedef typename std::unordered_map<int, std::shared_ptr<mas::RecruitmentBase<REAL_T> > >::iterator recruitment_model_iterator;
-        typedef typename std::unordered_map<int, std::shared_ptr<mas::Mortality<REAL_T> > >::iterator mortality_model_iterator;
+        typedef typename std::unordered_map<int, std::shared_ptr<mas::NaturalMortality<REAL_T> > >::iterator natural_mortality_model_iterator;
+        typedef typename std::unordered_map<int, std::shared_ptr<mas::FishingMortality<REAL_T> > >::iterator fishing_mortality_model_iterator;
         typedef typename std::unordered_map<int, std::shared_ptr<mas::FecundityBase<REAL_T> > >::iterator fecundity_model_iterator;
         typedef typename std::unordered_map<int, std::shared_ptr<mas::Movement<REAL_T> > >::iterator movement_model_iterator;
         typedef typename std::unordered_map<int, std::shared_ptr<mas::SelectivityBase<REAL_T> > >::iterator selectivity_model_iterator;
+        typedef typename std::unordered_map<int, std::shared_ptr<mas::Fleet<REAL_T> > >::iterator fleet_iterator;
 
     public:
 
@@ -167,8 +176,9 @@ namespace mas {
                 }
 
 
-                if (std::string((*mit).name.GetString()) == "season") {
-                    HandleSeason(mit);
+                if (std::string((*mit).name.GetString()) == "seasons") {
+                    //                    HandleSeason(mit);
+                    this->nseasons = (*mit).value.GetInt();
                 }
 
                 if (std::string((*mit).name.GetString()) == "recruitment") {
@@ -198,18 +208,24 @@ namespace mas {
                     HandleMovementModel(mit);
                 }
 
-                if (std::string((*mit).name.GetString()) == "mortality") {
-                    HandleMortalityModel(mit);
+                if (std::string((*mit).name.GetString()) == "natural_mortality") {
+                    HandleNaturalMortalityModel(mit);
+                }
+                if (std::string((*mit).name.GetString()) == "fishing_mortality") {
+                    HandleFishingMortalityModel(mit);
                 }
             }
 
 
         }
 
-        void HandleMortalityModel(rapidjson::Document::MemberIterator& mortality_model) {
-            std::shared_ptr<mas::Mortality<REAL_T> > model(new mas::Mortality<REAL_T>());
+        void HandleFishingMortalityModel(rapidjson::Document::MemberIterator& mortality_model) {
+            std::shared_ptr<mas::FishingMortality<REAL_T> > model(new mas::FishingMortality<REAL_T>());
             bool estimated = false;
             int phase = 1;
+            bool bounded = false;
+            REAL_T min = std::numeric_limits<REAL_T>::min();
+            REAL_T max = std::numeric_limits<REAL_T>::max();
 
             rapidjson::Document::MemberIterator rit = (*mortality_model).value.FindMember("id");
             int model_id = 0;
@@ -227,177 +243,217 @@ namespace mas {
             rapidjson::Document::MemberIterator pit = (*mortality_model).value.FindMember("parameters");
 
             if (pit == (*mortality_model).value.MemberEnd()) {
-                std::cout << "Configuration Error: Mortality model has no parameter definitions.\n";
-                mas::mas_log << "Configuration Error: Mortality model has no parameter definitions.\n";
+                std::cout << "Configuration Error: Fishing Mortality model has no parameter definitions.\n";
+                mas::mas_log << "Configuration Error: Fishing Mortality model has no parameter definitions.\n";
                 this->valid_configuration = false;
 
             } else {
 
-                rapidjson::Document::MemberIterator vit = (*pit).value.FindMember("male");
-                if (vit == (*pit).value.MemberEnd()) {
-                    std::cout << "Configuration Error: Mortality model has no male values defined.\n";
-                    mas::mas_log << "Configuration Error: Mortality model has no male values defined.\n";
-                    this->valid_configuration = false;
-                } else {
-                    rapidjson::Document::MemberIterator mvit = (*vit).value.FindMember("values");
-                    if ((*mvit).value.IsArray()) {
-                        model->male_mortality.resize((*mvit).value.Size());
-                        rapidjson::Value& v = (*mvit).value;
-                        for (int i = 0; i < (*mvit).value.Size(); i++) {
-                            std::stringstream ss;
-                            ss << "male_mortality[" << i << "]_" << model_id;
-                            mas::VariableTrait<REAL_T>::SetName(model->male_mortality[i], ss.str());
-                            mas::VariableTrait<REAL_T>::SetValue(model->male_mortality[i], static_cast<REAL_T> (v[i].GetDouble()));
-                        }
+                rapidjson::Document::MemberIterator vit = (*pit).value.FindMember("estimated");
+                if (vit != (*pit).value.MemberEnd()) {
+                    std::string estring = std::string((*vit).value.GetString());
 
-                    } else {
-                        std::cout << "Configuration Error: Mortality model values for males must be a vector.\n";
-                        mas::mas_log << "Configuration Error: Mortality model values for males must be a vector.\n";
-                        this->valid_configuration = false;
-                        return;
-                    }
-
-                    mvit = (*vit).value.FindMember("min");
-                    if (mvit != (*vit).value.MemberEnd()) {
-                        if ((*mvit).value.IsArray()) {
-
-                            rapidjson::Value& v = (*mvit).value;
-                            for (int i = 0; i < (*mvit).value.Size(); i++) {
-
-                                mas::VariableTrait<REAL_T>::SetMinBoundary(model->male_mortality[i], static_cast<REAL_T> (v[i].GetDouble()));
-                            }
-
-                        } else {
-                            std::cout << "Configuration Error: Mortality model min values for males must be a vector.\n";
-                            mas::mas_log << "Configuration Error: Mortality model min values for males must be a vector.\n";
-                            this->valid_configuration = false;
-
-                        }
-                    }
-
-                    mvit = (*vit).value.FindMember("max");
-                    if (mvit != (*vit).value.MemberEnd()) {
-                        if ((*mvit).value.IsArray()) {
-
-                            rapidjson::Value& v = (*mvit).value;
-                            for (int i = 0; i < (*mvit).value.Size(); i++) {
-
-                                mas::VariableTrait<REAL_T>::SetMaxBoundary(model->male_mortality[i], static_cast<REAL_T> (v[i].GetDouble()));
-                            }
-
-                        } else {
-                            std::cout << "Configuration Error: Mortality model min values for males must be a vector.\n";
-                            mas::mas_log << "Configuration Error: Mortality model min values for males must be a vector.\n";
-                            this->valid_configuration = false;
-
-                        }
-                    }
-
-                }
-
-                vit = (*pit).value.FindMember("female");
-                if (vit == (*pit).value.MemberEnd()) {
-                    std::cout << "Configuration Error: Mortality model has no male values defined.\n";
-                    mas::mas_log << "Configuration Error: Mortality model has no male values defined.\n";
-                    this->valid_configuration = false;
-                } else {
-                    rapidjson::Document::MemberIterator mvit = (*vit).value.FindMember("values");
-                    if ((*mvit).value.IsArray()) {
-                        model->female_mortality.resize((*mvit).value.Size());
-                        rapidjson::Value& v = (*mvit).value;
-                        for (int i = 0; i < (*mvit).value.Size(); i++) {
-                            std::stringstream ss;
-                            ss << "male_mortality[" << i << "]_" << model_id;
-                            mas::VariableTrait<REAL_T>::SetName(model->male_mortality[i], ss.str());
-                            mas::VariableTrait<REAL_T>::SetValue(model->male_mortality[i], static_cast<REAL_T> (v[i].GetDouble()));
-                        }
-
-                    } else {
-                        std::cout << "Configuration Error: Mortality model values for males must be a vector.\n";
-                        mas::mas_log << "Configuration Error: Mortality model values for males must be a vector.\n";
-                        this->valid_configuration = false;
-                        return;
-                    }
-
-                    mvit = (*vit).value.FindMember("min");
-                    if (mvit != (*vit).value.MemberEnd()) {
-                        if ((*mvit).value.IsArray()) {
-
-                            rapidjson::Value& v = (*mvit).value;
-                            for (int i = 0; i < (*mvit).value.Size(); i++) {
-
-                                mas::VariableTrait<REAL_T>::SetMinBoundary(model->male_mortality[i], static_cast<REAL_T> (v[i].GetDouble()));
-                            }
-
-                        } else {
-                            std::cout << "Configuration Error: Mortality model min values for males must be a vector.\n";
-                            mas::mas_log << "Configuration Error: Mortality model min values for males must be a vector.\n";
-                            this->valid_configuration = false;
-
-                        }
-                    }
-
-                    mvit = (*vit).value.FindMember("max");
-                    if (mvit != (*vit).value.MemberEnd()) {
-                        if ((*mvit).value.IsArray()) {
-
-                            rapidjson::Value& v = (*mvit).value;
-                            for (int i = 0; i < (*mvit).value.Size(); i++) {
-
-                                mas::VariableTrait<REAL_T>::SetMaxBoundary(model->male_mortality[i], static_cast<REAL_T> (v[i].GetDouble()));
-                            }
-
-                        } else {
-                            std::cout << "Configuration Error: Mortality model min values for males must be a vector.\n";
-                            mas::mas_log << "Configuration Error: Mortality model min values for males must be a vector.\n";
-                            this->valid_configuration = false;
-
-                        }
-                    }
-
-                }
-
-                bool estimated = false;
-                int phase = 1;
-                rit = (*mortality_model).value.FindMember("estimated");
-                if (rit != (*mortality_model).value.MemberEnd()) {
-                    std::string e = std::string((*rit).value.GetString());
-                    if (e == "true") {
+                    if (estring == "true") {
                         estimated = true;
                     }
                 }
 
-                if (estimated) {
-                    phase = 1;
-                    rit = (*mortality_model).value.FindMember("phase");
-                    if (rit != (*mortality_model).value.MemberEnd()) {
-                        phase = (*rit).value.GetInt();
-                    }
-
-                    //register male mortality parameters
-                    for (int i = 0; i < model->male_mortality.size(); i++) {
-                        model->Register(model->male_mortality[i], phase);
-                    }
-
-                    //register female mortality parameters
-                    for (int i = 0; i < model->female_mortality.size(); i++) {
-                        model->Register(model->female_mortality[i], phase);
-                    }
-
+                vit = (*pit).value.FindMember("min");
+                if (vit != (*pit).value.MemberEnd()) {
+                    min = static_cast<REAL_T> ((*vit).value.GetDouble());
+                    bounded = true;
                 }
 
-                mortality_model_iterator it = this->mortality_models.find(model->id);
-                if (it != this->mortality_models.end()) {
-                    std::cout << "Configuration Error: More than one mortality model with the same identifier defined. Mortality models require a unique id.\n";
-                    mas::mas_log << "Configuration Error: More than one mortality model with the same identifier defined. Mortality models require a unique id.\n";
+                vit = (*pit).value.FindMember("max");
+                if (vit != (*pit).value.MemberEnd()) {
+                    max = static_cast<REAL_T> ((*vit).value.GetDouble());
+                    bounded = true;
+                }
 
+                vit = (*pit).value.FindMember("phase");
+                if (vit != (*pit).value.MemberEnd()) {
+                    std::string pstring = std::string((*vit).value.GetString());
+                    phase = StringToNumber<uint32_t>(pstring);
+                }
+
+                vit = (*pit).value.FindMember("values");
+
+                if (vit == (*pit).value.MemberEnd()) {
+                    std::cout << "Configuration Error: Fishing Mortality model supplied no values\n";
+                    mas::mas_log << "Configuration Error: Fishing Mortality model supplied no values\n";
                     this->valid_configuration = false;
-
                 } else {
-                    this->mortality_models[model->id] = model;
+
+                    if ((*vit).value.IsArray()) {
+                        rapidjson::Value & v = (*vit).value;
+
+                        if (v.IsArray()) {
+
+                            model->fishing_mortality.resize(v.Size());
+
+                            for (int i = 0; i < v.Size(); i++) {
+                                rapidjson::Value & vv = v[i];
+                                model->fishing_mortality[i].resize(vv.Size());
+                                for (int j = 0; j < vv.Size(); j++) {
+                                    mas::VariableTrait<REAL_T>::SetValue(model->fishing_mortality[i][j], static_cast<REAL_T> (vv[j].GetDouble()));
+                                    if (estimated) {
+                                        if (bounded) {
+                                            mas::VariableTrait<REAL_T>::SetMinBoundary(model->fishing_mortality[i][j], min);
+                                            mas::VariableTrait<REAL_T>::SetMaxBoundary(model->fishing_mortality[i][j], max);
+                                        }
+                                        std::stringstream ss;
+                                        ss << "fishing_mortality[" << i << "][" << j << "]_" << model_id;
+                                        mas::VariableTrait<REAL_T>::SetName(model->fishing_mortality[i][j], ss.str());
+                                        model->Register(model->fishing_mortality[i][j], phase);
+                                    }
+                                }
+                            }
+
+
+                        } else {
+                            std::cout << "Configuration Error: Fishing Mortality is requires values in a matrix[year,season] not a vector\n";
+                            std::cout << "Configuration Error: Fishing Mortality is requires values in a matrix[year,season] not a vector\n";
+                            this->valid_configuration = false;
+                        }
+
+
+                    } else {
+                        std::cout << "Configuration Error: Fishing Mortality is requires values in a matrix[year,season]\n";
+                        std::cout << "Configuration Error: Fishing Mortality is requires values in a matrix[year,season]\n";
+                        this->valid_configuration = false;
+                    }
+
+
                 }
 
             }
+
+            fishing_mortality_model_iterator fit = this->finshing_mortality_models.find(model->id);
+
+
+            if (fit == this->finshing_mortality_models.end()) {
+                this->finshing_mortality_models[model->id] = model;
+
+
+            } else {
+                std::cout << "Configuration Error: More than one fishing mortality model with the same identifier defined. Fishing mortality models require a unique id.\n";
+                mas_log << "Configuration Error: More than one fishing mortality model with the same identifier defined. Fishing mortality models require a unique id.\n";
+                this->valid_configuration = false;
+
+            }
+
+
+        }
+
+        void HandleNaturalMortalityModel(rapidjson::Document::MemberIterator& mortality_model) {
+            std::shared_ptr<mas::NaturalMortality<REAL_T> > model(new mas::NaturalMortality<REAL_T>());
+            bool estimated = false;
+            int phase = 1;
+
+            rapidjson::Document::MemberIterator rit = (*mortality_model).value.FindMember("id");
+            int model_id = 0;
+            if (rit == (*mortality_model).value.MemberEnd()) {
+                std::cout << "Configuration Error: Mortality is required to have a unique identifier\n";
+                mas::mas_log << "Configuration Error: Mortality is required to have a unique identifier\n";
+                this->valid_configuration = false;
+
+            } else {
+                model_id = (*rit).value.GetInt();
+            }
+
+            model->id = model_id;
+
+            rapidjson::Document::MemberIterator pit = (*mortality_model).value.FindMember("parameters");
+            rapidjson::Document::MemberIterator mvit = (*pit).value.FindMember("values");
+            if ((*mvit).value.IsArray()) {
+                //                        model->male_mortality.resize((*mvit).value.Size());
+                rapidjson::Value& v = (*mvit).value;
+                model->mortality_vector.resize((*mvit).value.Size());
+                for (int i = 0; i < (*mvit).value.Size(); i++) {
+                    std::stringstream ss;
+                    ss << "male_mortality[" << i << "]_" << model_id;
+                    mas::VariableTrait<REAL_T>::SetName(model->mortality_vector[i], ss.str());
+                    mas::VariableTrait<REAL_T>::SetValue(model->mortality_vector[i], static_cast<REAL_T> (v[i].GetDouble()));
+                }
+
+            } else {
+                std::cout << "Configuration Error: Mortality model values for males must be a vector.\n";
+                mas::mas_log << "Configuration Error: Mortality model values for males must be a vector.\n";
+                this->valid_configuration = false;
+                return;
+            }
+
+            mvit = (*pit).value.FindMember("min");
+            if (mvit != (*pit).value.MemberEnd()) {
+                if ((*mvit).value.IsArray()) {
+
+                    rapidjson::Value& v = (*mvit).value;
+                    for (int i = 0; i < (*mvit).value.Size(); i++) {
+
+                        mas::VariableTrait<REAL_T>::SetMinBoundary(model->mortality_vector[i], static_cast<REAL_T> (v[i].GetDouble()));
+                    }
+
+                } else {
+                    std::cout << "Configuration Error: Mortality model min values for males must be a vector.\n";
+                    mas::mas_log << "Configuration Error: Mortality model min values for males must be a vector.\n";
+                    this->valid_configuration = false;
+
+                }
+            }
+
+            mvit = (*pit).value.FindMember("max");
+            if (mvit != (*pit).value.MemberEnd()) {
+                if ((*mvit).value.IsArray()) {
+
+                    rapidjson::Value& v = (*mvit).value;
+                    for (int i = 0; i < (*mvit).value.Size(); i++) {
+
+                        mas::VariableTrait<REAL_T>::SetMaxBoundary(model->mortality_vector[i], static_cast<REAL_T> (v[i].GetDouble()));
+                    }
+
+                } else {
+                    std::cout << "Configuration Error: Mortality model min values for males must be a vector.\n";
+                    mas::mas_log << "Configuration Error: Mortality model min values for males must be a vector.\n";
+                    this->valid_configuration = false;
+
+                }
+            }
+
+
+            rit = (*pit).value.FindMember("estimated");
+            if (rit != (*pit).value.MemberEnd()) {
+                std::string e = std::string((*rit).value.GetString());
+                if (e == "true") {
+                    estimated = true;
+                }
+            }
+
+            if (estimated) {
+                phase = 1;
+                rit = (*pit).value.FindMember("phase");
+                if (rit != (*pit).value.MemberEnd()) {
+                    phase = (*rit).value.GetInt();
+                }
+
+                //register male mortality parameters
+                for (int i = 0; i < model->mortality_vector.size(); i++) {
+                    model->Register(model->mortality_vector[i], phase);
+                }
+
+            }
+
+            natural_mortality_model_iterator it = this->natural_mortality_models.find(model->id);
+            if (it != this->natural_mortality_models.end()) {
+                std::cout << "Configuration Error: More than one mortality model with the same identifier defined. Mortality models require a unique id.\n";
+                mas::mas_log << "Configuration Error: More than one mortality model with the same identifier defined. Mortality models require a unique id.\n";
+
+                this->valid_configuration = false;
+
+            } else {
+                std::cout << "inserting natural mortality " << model->id << "\n";
+                this->natural_mortality_models[model->id] = model;
+            }
+
         }
 
         void HandleMovementModel(rapidjson::Document::MemberIterator& movement_model) {
@@ -434,9 +490,16 @@ namespace mas {
                 for (int i = 0; i < (*rit).value.Size(); i++) {
                     rapidjson::Value& m = (*rit).value[i];
                     if (m.IsArray()) {
+
                         model->male_connectivity[i].resize(m.Size());
                         for (int j = 0; j < m.Size(); j++) {
-                            mas::VariableTrait<REAL_T>::SetValue(model->male_connectivity[i][j], static_cast<REAL_T> (m[j].GetDouble()));
+                            rapidjson::Value& n = m[j];
+                            if (n.IsArray()) {
+                                model->male_connectivity[i][j].resize(n.Size());
+                                for (int k = 0; k < n.Size(); k++) {
+                                    mas::VariableTrait<REAL_T>::SetValue(model->male_connectivity[i][j][k], static_cast<REAL_T> (m[j][k].GetDouble()));
+                                }
+                            }
                         }
 
                     } else {
@@ -461,16 +524,23 @@ namespace mas {
                 for (int i = 0; i < (*rit).value.Size(); i++) {
                     rapidjson::Value& m = (*rit).value[i];
                     if (m.IsArray()) {
+
                         model->female_connectivity[i].resize(m.Size());
                         for (int j = 0; j < m.Size(); j++) {
-                            mas::VariableTrait<REAL_T>::SetValue(model->female_connectivity[i][j], static_cast<REAL_T> (m[j].GetDouble()));
+                            rapidjson::Value& n = m[j];
+                            if (n.IsArray()) {
+                                model->female_connectivity[i][j].resize(n.Size());
+                                for (int k = 0; k < n.Size(); k++) {
+                                    mas::VariableTrait<REAL_T>::SetValue(model->female_connectivity[i][j][k], static_cast<REAL_T> (m[j][k].GetDouble()));
+                                }
+                            }
                         }
 
                     } else {
                         std::cout << "Configuration Error: Movement connectivity rows must be a vector\n";
                         mas::mas_log << "Configuration Error: Movement connectivity rows must be a vector\n";
                         this->valid_configuration = false;
-                        ;
+
                     }
                 }
 
@@ -500,19 +570,24 @@ namespace mas {
                 //register movement coefficients
                 for (int i = 0; i < model->male_connectivity.size(); i++) {
                     for (int j = 0; j < model->male_connectivity[i].size(); j++) {
-                        std::stringstream ss;
-                        ss << "male_connectivity[" << i << "][" << j << "]_" << model->id;
-                        model->Register(model->male_connectivity[i][j], phase);
-                        mas::VariableTrait<REAL_T>::SetName(model->male_connectivity[i][j], ss.str());
+                        for (int k = 0; k < model->male_connectivity[i][0].size(); k++) {
+                            std::stringstream ss;
+                            ss << "male_connectivity[" << i << "][" << j << "][" << k << "]_" << model->id;
+                            model->Register(model->male_connectivity[i][j][k], phase);
+                            mas::VariableTrait<REAL_T>::SetName(model->male_connectivity[i][j][k], ss.str());
+                        }
                     }
                 }
 
-                for (int i = 0; i < model->female_connectivity.size(); i++) {
-                    for (int j = 0; j < model->female_connectivity[i].size(); j++) {
-                        std::stringstream ss;
-                        ss << "female_connectivity[" << i << "][" << j << "]_" << model->id;
-                        model->Register(model->female_connectivity[i][j], phase);
-                        mas::VariableTrait<REAL_T>::SetName(model->female_connectivity[i][j], ss.str());
+                //register movement coefficients
+                for (int i = 0; i < model->male_connectivity.size(); i++) {
+                    for (int j = 0; j < model->male_connectivity[i].size(); j++) {
+                        for (int k = 0; k < model->male_connectivity[i][0].size(); k++) {
+                            std::stringstream ss;
+                            ss << "male_connectivity[" << i << "][" << j << "][" << k << "]_" << model->id;
+                            model->Register(model->male_connectivity[i][j][k], phase);
+                            mas::VariableTrait<REAL_T>::SetName(model->male_connectivity[i][j][k], ss.str());
+                        }
                     }
                 }
             }
@@ -560,7 +635,7 @@ namespace mas {
                     std::cout << "Configuration Error: Fleets are required to have selectivity definitions in a vector\n";
                     std::cout << "Configuration Error: Fleets are required to have selectivity definitions in a vector\n";
                     this->valid_configuration = false;
-                    ;
+
                 } else {
                     for (int i = 0; i < (*rit).value.Size(); i++) {
                         rapidjson::Value& m = (*rit).value[i];
@@ -573,7 +648,7 @@ namespace mas {
                             std::cout << "Configuration Error: Fleets selectivity has no model identifier\n";
                             std::cout << "Configuration Error: Fleets selectivity has no model identifier\n";
                             this->valid_configuration = false;
-                            ;
+
                         } else {
                             sid = (*mit).value.GetInt();
                         }
@@ -583,7 +658,7 @@ namespace mas {
                             std::cout << "Configuration Error: Fleets selectivity season has no identifier\n";
                             std::cout << "Configuration Error: Fleets selectivity season has no identifier\n";
                             this->valid_configuration = false;
-                            ;
+
                         } else {
                             sseason = (*mit).value.GetInt();
                         }
@@ -593,20 +668,79 @@ namespace mas {
                             std::cout << "Configuration Error: Fleets selectivity area has no identifier\n";
                             std::cout << "Configuration Error: Fleets selectivity area has no identifier\n";
                             this->valid_configuration = false;
-                            ;
+
                         } else {
                             sarea = (*mit).value.GetInt();
                         }
                         model->season_area_selectivity_ids[sseason][sarea] = sid;
-
+                        model->area_season_selectivity_ids[sarea][sseason] = sid;
                     }
                 }
             }
 
 
+            rit = (*fleet_model).value.FindMember("fishing_mortality");
+            if (rit != (*fleet_model).value.MemberEnd()) {
+                if (!(*rit).value.IsArray()) {
+                    std::cout << "Configuration Error: Fleets are required to have fishing mortality definitions in a vector\n";
+                    std::cout << "Configuration Error: Fleets are required to have fishing mortality definitions in a vector\n";
+                    this->valid_configuration = false;
+
+                } else {
+                    for (int i = 0; i < (*rit).value.Size(); i++) {
+                        rapidjson::Value& m = (*rit).value[i];
+
+                        int sid = 0;
+                        int sarea = 0;
+                        int sseason = 0;
+                        rapidjson::Document::MemberIterator mit = m.FindMember("id");
+                        if (mit == m.MemberEnd()) {
+                            std::cout << "Configuration Error: Fleets fishing mortality has no model identifier\n";
+                            std::cout << "Configuration Error: Fleets fishing mortality has no model identifier\n";
+                            this->valid_configuration = false;
+
+                        } else {
+                            sid = (*mit).value.GetInt();
+                        }
+
+                        mit = m.FindMember("season");
+                        if (mit == m.MemberEnd()) {
+                            std::cout << "Configuration Error: Fleets fishing mortality season has no identifier\n";
+                            std::cout << "Configuration Error: Fleets fishing mortality season has no identifier\n";
+                            this->valid_configuration = false;
+
+                        } else {
+                            sseason = (*mit).value.GetInt();
+                        }
+
+                        mit = m.FindMember("area");
+                        if (mit == m.MemberEnd()) {
+                            std::cout << "Configuration Error: Fleets fishing mortality area has no identifier\n";
+                            std::cout << "Configuration Error: Fleets fishing mortality area has no identifier\n";
+                            this->valid_configuration = false;
+
+                        } else {
+                            sarea = (*mit).value.GetInt();
+                        }
+                        model->season_area_fishing_mortality_ids[sseason][sarea] = sid;
+                        model->area_season_fishing_mortality_ids[sarea][sseason] = sid;
+                    }
+                }
+            }
+
+
+            fleet_iterator fit;
+            fit = this->fleets.find(model->id);
+            if (fit == this->fleets.end()) {
+                this->fleets[model->id] = model;
+            } else {
+                std::cout << "Configuration Error: More than one fleet with the same identifier defined. Fleets require a unique id.\n";
+                mas::mas_log << "Configuration Error: More than one fleet with the same identifier defined. Fleets require a unique id.\n";
+            }
+
         }
 
-        void HandlePopulationModel(rapidjson::Document::MemberIterator& population_model) {
+        void HandlePopulationModel(rapidjson::Document::MemberIterator & population_model) {
             std::shared_ptr<mas::Population<REAL_T> > model(new mas::Population<REAL_T>());
 
 
@@ -636,8 +770,9 @@ namespace mas {
                 std::cout << "Configuration Error: Population is required to have a natal area identifier\n";
                 mas::mas_log << "Configuration Error: Population is required to have a natal area identifier\n";
                 this->valid_configuration = false;
-                ;
+
             }
+
 
             rit = (*population_model).value.FindMember("movement");
             if (rit != (*population_model).value.MemberEnd()) {
@@ -659,7 +794,7 @@ namespace mas {
                             this->valid_configuration = false;
                         }
 
-                        mit = v.FindMember("movement_model");
+                        mit = v.FindMember("id");
                         if ((mit) != v.MemberEnd()) {
                             m = (*mit).value.GetInt();
                         } else {
@@ -702,240 +837,147 @@ namespace mas {
                 std::cout << "Configuration Error: Population is required to define recruitment type, \"natal\"or \"metapopulation\"\n";
                 mas::mas_log << "Configuration Error: Population is required to define recruitment type, \"natal\"or \"metapopulation\"\n";
                 this->valid_configuration = false;
-                ;
+
             }
 
 
             rit = (*population_model).value.FindMember("parameters");
 
+            if (rit == (*population_model).value.MemberEnd()) {
+                std::cout << "Configuration Error: Population is required to define paramters.";
+                mas_log << "Configuration Error: Population is required to define paramters.";
+                this->valid_configuration = false;
+                return;
+
+            }
+
             rapidjson::Document::MemberIterator in_it = (*rit).value.FindMember("initial_numbers");
 
-            rapidjson::Document::MemberIterator m_it = (*in_it).value.FindMember("male");
-            if (m_it != (*in_it).value.MemberEnd()) {
-                bool estimated = false;
-                int phase = 1;
-                std::vector<REAL_T> init_numbers;
-                std::vector<REAL_T> init_numbers_min;
-                std::vector<REAL_T> init_numbers_max;
-                rapidjson::Document::MemberIterator v_it = (*m_it).value.FindMember("value");
-                if (v_it != (*m_it).value.MemberEnd()) {
-                    if ((*v_it).value.IsArray()) {
-                        rapidjson::Value& m = (*v_it).value;
+            if ((*in_it).value.IsArray()) {
 
-                        for (int i = 0; i < m.Size(); i++) {
-                            init_numbers.push_back(static_cast<REAL_T> (m[i].GetDouble()));
+                rapidjson::Value& numbers = ((*in_it).value);
+                for (int i = 0; i < numbers.Size(); i++) {
+
+                    InitialNumbers<REAL_T> initial_n;
+
+                    rapidjson::Value& entry = numbers[i];
+                    rapidjson::Document::MemberIterator nit;
+                    std::string sex;
+                    int area;
+
+                    nit = entry.FindMember("sex");
+                    if (nit != entry.MemberEnd()) {
+                        sex = std::string((*nit).value.GetString());
+                        if (sex == "male") {
+                            initial_n.type = MALE;
+                        } else if (sex == "female") {
+                            initial_n.type = FEMALE;
                         }
 
                     } else {
-                        std::cout << "Configuration Error: Initial population numbers must be a vector.\n";
-                        mas::mas_log << "Configuration Error: Initial population numbers must be a vector.\n";
-                        this->valid_configuration = false;
-                        ;
+                        std::cout << "Configuration Error: Population initial numbers is required to define a sex";
+                        mas::mas_log << "Configuration Error: Population initial numbers is required to define a sex";
+
                     }
-                } else {
-                    std::cout << "Configuration Error: Initial population numbers not defined.\n";
-                    mas::mas_log << "Configuration Error: Initial population numbers  not defined.\n";
-                    this->valid_configuration = false;
-                    ;
-                }
 
-                v_it = (*m_it).value.FindMember("min");
-                if (v_it != (*m_it).value.MemberEnd()) {
-                    if ((*v_it).value.IsArray()) {
-                        rapidjson::Value& m = (*v_it).value;
+                    nit = entry.FindMember("area");
+                    if (nit != entry.MemberEnd()) {
+                        area = (*nit).value.GetInt();
+                        initial_n.area_id = area;
+                    } else {
+                        std::cout << "Configuration Error: Population initial numbers is required to define a area";
+                        mas::mas_log << "Configuration Error: Population initial numbers is required to define a area";
 
-                        for (int i = 0; i < m.Size(); i++) {
-                            init_numbers_min.push_back(static_cast<REAL_T> (m[i].GetDouble()));
+                    }
+
+                    nit = entry.FindMember("values");
+                    if (nit != entry.MemberEnd()) {
+                        rapidjson::Value& values = (*nit).value;
+                        if (values.IsArray()) {
+                            initial_n.values.resize(values.Size());
+                            for (int i = 0; i < values.Size(); i++) {
+
+                                VariableTrait<REAL_T>::SetValue(initial_n.values[i], static_cast<REAL_T> (values[i].GetDouble()));
+                            }
+
                         }
 
                     } else {
-                        std::cout << "Configuration Error: Initial population min numbers must be a vector.\n";
-                        mas::mas_log << "Configuration Error: Initial population min numbers must be a vector.\n";
-                        this->valid_configuration = false;
-                        ;
-                    }
-                }
+                        std::cout << "Configuration Error: Population initial numbers is required to define values";
+                        mas::mas_log << "Configuration Error: Population initial numbers is required to define values";
 
-                v_it = (*m_it).value.FindMember("max");
-                if (v_it != (*m_it).value.MemberEnd()) {
-                    if ((*v_it).value.IsArray()) {
-                        rapidjson::Value& m = (*v_it).value;
-
-                        for (int i = 0; i < m.Size(); i++) {
-                            init_numbers_max.push_back(static_cast<REAL_T> (m[i].GetDouble()));
-                        }
-
-                    } else {
-                        std::cout << "Configuration Error: Initial population max numbers must be a vector.\n";
-                        mas::mas_log << "Configuration Error: Initial population max numbers must be a vector.\n";
-                        this->valid_configuration = false;
-                        ;
-                    }
-                }
-
-
-                model->initial_population_males.resize(init_numbers.size());
-                for (int i = 0; i < init_numbers.size(); i++) {
-                    std::stringstream ss;
-                    ss << "init_population_males" << "[" << i << "]_" << model_id;
-                    mas::VariableTrait<REAL_T>::SetValue(model->initial_population_males[i], init_numbers[i]);
-                    mas::VariableTrait<REAL_T>::SetName(model->initial_population_males[i], ss.str());
-                }
-
-                if (init_numbers_min.size()) {
-                    for (int i = 0; i < init_numbers_min.size(); i++) {
-                        mas::VariableTrait<REAL_T>::SetMinBoundary(model->initial_population_males[i], init_numbers_min[i]);
-                    }
-                }
-
-                if (init_numbers_max.size()) {
-                    for (int i = 0; i < init_numbers_min.size(); i++) {
-                        mas::VariableTrait<REAL_T>::SetMaxBoundary(model->initial_population_males[i], init_numbers_max[i]);
-                    }
-                }
-
-                v_it = (*m_it).value.FindMember("estimated");
-                if (v_it != (*m_it).value.MemberEnd()) {
-                    std::string e = std::string((*v_it).value.GetString());
-                    if (e == "true") {
-                        estimated = true;
-                    }
-                }
-
-                if (estimated) {
-                    phase = 1;
-                    v_it = (*m_it).value.FindMember("phase");
-                    if (v_it != (*m_it).value.MemberEnd()) {
-                        phase = (*v_it).value.GetInt();
-                    }
-                    //register initial numbers
-                    for (int i = 0; i < init_numbers.size(); i++) {
-                        model->Register(model->initial_population_males[i], phase);
                     }
 
-
+                    model->initial_numbers.push_back(initial_n);
                 }
-
 
 
             } else {
-                std::cout << "Configuration Warning: No initial population numbers for males given for population " << model->id << ".\n";
-                mas::mas_log << "Configuration Warning: No initial population numbers for males given for population " << model->id << ".\n";
+                std::cout << "Configuration Error: initial_numbers for population \"" << model->id << "\" must be a vector.\n";
+                mas_log << "Configuration Error: initial_numbers for population \"" << model->id << "\" must be a vector.\n";
             }
 
-            m_it = (*in_it).value.FindMember("female");
-            if (m_it != (*in_it).value.MemberEnd()) {
-                bool estimated = false;
-                int phase = 1;
-                std::vector<REAL_T> init_numbers;
-                std::vector<REAL_T> init_numbers_min;
-                std::vector<REAL_T> init_numbers_max;
-                rapidjson::Document::MemberIterator v_it = (*m_it).value.FindMember("value");
-                if (v_it != (*m_it).value.MemberEnd()) {
-                    if ((*v_it).value.IsArray()) {
-                        rapidjson::Value& m = (*v_it).value;
+            in_it = (*rit).value.FindMember("natural_mortality");
+            if (in_it != (*rit).value.MemberEnd()) {
 
-                        for (int i = 0; i < m.Size(); i++) {
-                            init_numbers.push_back(static_cast<REAL_T> (m[i].GetDouble()));
+                if ((*in_it).value.IsArray()) {
+                    int a = 0;
+                    int m = 0;
+                    std::string sex = "NA";
+
+                    std::cout << "size nm ->" << (*in_it).value.Size() << "\n";
+                    for (int i = 0; i < (*in_it).value.Size(); i++) {
+                        rapidjson::Value& v = (*in_it).value[i];
+                        m = 0;
+                        sex = "NA";
+
+                        rapidjson::Document::MemberIterator mit = v.FindMember("area");
+                        if ((mit) != v.MemberEnd()) {
+                            a = (*mit).value.GetInt();
+                        } else {
+                            std::cout << "Configuration Error: Natural mortality area not defined in population.\n";
+                            mas::mas_log << "Configuration Error: Natural mortality area not defined in population.\n";
+                            this->valid_configuration = false;
                         }
 
-                    } else {
-                        std::cout << "Configuration Error: Initial population numbers must be a vector.\n";
-                        mas::mas_log << "Configuration Error: Initial population numbers must be a vector.\n";
-                        this->valid_configuration = false;
-                        ;
-                    }
-                } else {
-                    std::cout << "Configuration Error: Initial population numbers not defined.\n";
-                    mas::mas_log << "Configuration Error: Initial population numbers  not defined.\n";
-                    this->valid_configuration = false;
-                    ;
-                }
 
-
-                v_it = (*m_it).value.FindMember("min");
-                if (v_it != (*m_it).value.MemberEnd()) {
-                    if ((*v_it).value.IsArray()) {
-                        rapidjson::Value& m = (*v_it).value;
-
-                        for (int i = 0; i < m.Size(); i++) {
-                            init_numbers_min.push_back(static_cast<REAL_T> (m[i].GetDouble()));
+                        mit = v.FindMember("id");
+                        if ((mit) != v.MemberEnd()) {
+                            m = (*mit).value.GetInt();
+                        } else {
+                            std::cout << "Configuration Error: Natural mortality model not defined in population.\n";
+                            mas::mas_log << "Configuration Error: Natural mortality model not defined in population.\n";
+                            this->valid_configuration = false;
                         }
 
-                    } else {
-                        std::cout << "Configuration Error: Initial population min numbers must be a vector.\n";
-                        mas::mas_log << "Configuration Error: Initial population min numbers must be a vector.\n";
-                        this->valid_configuration = false;
-                        ;
-                    }
-                }
-
-                v_it = (*m_it).value.FindMember("max");
-                if (v_it != (*m_it).value.MemberEnd()) {
-                    if ((*v_it).value.IsArray()) {
-                        rapidjson::Value& m = (*v_it).value;
-
-                        for (int i = 0; i < m.Size(); i++) {
-                            init_numbers_max.push_back(static_cast<REAL_T> (m[i].GetDouble()));
+                        mit = v.FindMember("sex");
+                        if ((mit) != v.MemberEnd()) {
+                            sex = std::string((*mit).value.GetString());
+                        } else {
+                            std::cout << "Configuration Warning: Natural mortality sex not defined in population.\n";
+                            mas::mas_log << "Configuration Warning: Natural mortality sex not defined in population.\n";
+                            //                            this->valid_configuration = false;
                         }
 
-                    } else {
-                        std::cout << "Configuration Error: Initial population max numbers must be a vector.\n";
-                        mas::mas_log << "Configuration Error: Initial population max numbers must be a vector.\n";
-                        this->valid_configuration = false;
-                        ;
-                    }
-                }
+                        std::cout << "pop = " << model->id << "\n";
+                        std::cout << "area = " << a << "\n";
+                        std::cout << "natural mortality model = " << m << "\n";
+                        if (sex == "female") {
+                            std::cout << "sex = female\n";
+                            model->female_natural_mortality_ids[a] = m;
+                        } else {
+                            std::cout << "sex = male\n";
+                            model->male_natural_mortality_ids[a] = m;
+                        }
 
-
-                model->initial_population_females.resize(init_numbers.size());
-                for (int i = 0; i < init_numbers.size(); i++) {
-                    std::stringstream ss;
-                    ss << "init_population_females" << "[" << i << "]_" << model_id;
-                    mas::VariableTrait<REAL_T>::SetValue(model->initial_population_females[i], init_numbers[i]);
-                    mas::VariableTrait<REAL_T>::SetName(model->initial_population_females[i], ss.str());
-                }
-
-                if (init_numbers_min.size()) {
-                    for (int i = 0; i < init_numbers_min.size(); i++) {
-                        mas::VariableTrait<REAL_T>::SetMinBoundary(model->initial_population_females[i], init_numbers_min[i]);
                     }
-                }
 
-                if (init_numbers_max.size()) {
-                    for (int i = 0; i < init_numbers_min.size(); i++) {
-                        mas::VariableTrait<REAL_T>::SetMaxBoundary(model->initial_population_females[i], init_numbers_max[i]);
-                    }
-                }
-
-                v_it = (*m_it).value.FindMember("estimated");
-                if (v_it != (*m_it).value.MemberEnd()) {
-                    std::string e = std::string((*v_it).value.GetString());
-                    if (e == "true") {
-                        estimated = true;
-                    }
-                }
-
-                if (estimated) {
-                    phase = 1;
-                    v_it = (*m_it).value.FindMember("phase");
-                    if (v_it != (*m_it).value.MemberEnd()) {
-                        phase = (*v_it).value.GetInt();
-                    }
-                    //register initial numbers
-                    for (int i = 0; i < init_numbers.size(); i++) {
-                        model->Register(model->initial_population_females[i], phase);
-                    }
 
 
                 }
 
-
-
-            } else {
-                std::cout << "Configuration Warning: No initial population numbers for females given for population " << model->id << ".\n";
-                mas::mas_log << "Configuration Warning: No initial population numbers for females given for population " << model->id << ".\n";
             }
+
 
             population_iterator it = this->populations.find(model->id);
             if (it != this->populations.end()) {
@@ -950,7 +992,7 @@ namespace mas {
 
         }
 
-        void HandleAreaModel(rapidjson::Document::MemberIterator& area_model) {
+        void HandleAreaModel(rapidjson::Document::MemberIterator & area_model) {
 
             std::shared_ptr<mas::Area<REAL_T> > model(new mas::Area<REAL_T>());
 
@@ -1029,7 +1071,7 @@ namespace mas {
 
         }
 
-        void HandleSelectivityModel(rapidjson::Document::MemberIterator& selectivity_model) {
+        void HandleSelectivityModel(rapidjson::Document::MemberIterator & selectivity_model) {
             rapidjson::Document::MemberIterator rit;
             rit = (*selectivity_model).value.FindMember("model");
 
@@ -1443,7 +1485,7 @@ namespace mas {
 
         }
 
-        void HandleGrowthModel(rapidjson::Document::MemberIterator& growth_model) {
+        void HandleGrowthModel(rapidjson::Document::MemberIterator & growth_model) {
             rapidjson::Document::MemberIterator rit;
             rit = (*growth_model).value.FindMember("model");
 
@@ -1494,7 +1536,7 @@ namespace mas {
                     std::cout << "Configuration Error: Recruitment model \"Beverton-Holt\" has no parameter definitions.\n";
                     mas::mas_log << "Configuration Error: Recruitment model \"Beverton-Holt\" has no parameter definitions.\n";
                     this->valid_configuration = false;
-                    ;
+
                 } else {
                     rapidjson::Document::MemberIterator ppit = (*pit).value.FindMember("k");
                     if (ppit == (*pit).value.MemberEnd()) {
@@ -1548,6 +1590,249 @@ namespace mas {
                         }
 
                     }
+
+
+                    ppit = (*pit).value.FindMember("linf");
+                    if (ppit == (*pit).value.MemberEnd()) {
+                        std::cout << "Configuration Warning: Growth model \"Von Bertalannfy\" " <<
+                                "does not define \"l_inf\". Model will use the default value of 0 and \"l_inf\" will not be estimated.\n";
+                        mas::mas_log << "Configuration Warning: Recruitment model \"Von Bertalannfy\" " <<
+                                "does not define \"l_inf\". Model will use the default value of 0 and \"l_inf\" will not be estimated.\n";
+                    } else {
+
+                        bool estimated = false;
+                        int phase = 1;
+                        //1. Get initial value if there is one.
+                        rapidjson::Document::MemberIterator pm = (*ppit).value.FindMember("value");
+
+                        if (pm == (*ppit).value.MemberEnd()) {
+                            std::cout << "Configuration Warning: Growth model \"Von Bertalannfy\" does not provide a initial value for \"l_inf\".\n";
+                            mas::mas_log << "Configuration Warning: Growth model \"Von Bertalannfy\" does not provide a initial value for \"l_inf\".\n";
+                        } else {
+                            VariableTrait<REAL_T>::SetValue(vb->l_inf, static_cast<REAL_T> ((*pm).value.GetDouble()));
+                        }
+
+                        //2. Get min boundary if there is one.
+                        pm = (*ppit).value.FindMember("min");
+                        if (pm != (*ppit).value.MemberEnd()) {
+                            VariableTrait<REAL_T>::SetMinBoundary(vb->l_inf, static_cast<REAL_T> ((*pm).value.GetDouble()));
+                        }
+
+                        //3. Get max boundary if there is one.
+                        pm = (*ppit).value.FindMember("max");
+                        if (pm != (*ppit).value.MemberEnd()) {
+                            VariableTrait<REAL_T>::SetMaxBoundary(vb->l_inf, static_cast<REAL_T> ((*pm).value.GetDouble()));
+                        }
+
+                        pm = (*ppit).value.FindMember("estimated");
+                        if (pm != (*ppit).value.MemberEnd()) {
+                            std::string e = std::string((*pm).value.GetString());
+                            if (e == "true") {
+                                estimated = true;
+                            }
+                        }
+
+                        if (estimated) {
+                            phase = 1;
+                            pm = (*ppit).value.FindMember("phase");
+                            if (pm != (*ppit).value.MemberEnd()) {
+                                phase = (*pm).value.GetInt();
+                            }
+                            //register alpha
+                            vb->Register(vb->l_inf, phase);
+
+                        }
+
+                    }
+
+
+
+                }
+
+            } else if (smodel == std::string("von_bertalanffy_modified")) {
+                model = std::make_shared<mas::VonBertalanffyModified<REAL_T> >();
+                mas::VonBertalanffyModified<REAL_T>* vb = (mas::VonBertalanffyModified<REAL_T>*)model.get();
+
+                std::stringstream ss;
+                ss << "von_bertalanffy_c_" << model_id;
+                VariableTrait<REAL_T>::SetName(vb->c, ss.str());
+                ss.str("");
+                ss << "von_bertalanffy_inf_" << model_id;
+                VariableTrait<REAL_T>::SetName(vb->l_inf, ss.str());
+
+                ss.str("");
+                ss << "von_bertalanffy_amax_" << model_id;
+                VariableTrait<REAL_T>::SetName(vb->a_max, ss.str());
+
+                ss.str("");
+                ss << "von_bertalanffy_amin_" << model_id;
+                VariableTrait<REAL_T>::SetName(vb->a_min, ss.str());
+
+                if (pit == (*growth_model).value.MemberEnd()) {
+                    std::cout << "Configuration Error: Recruitment model \"Beverton-Holt\" has no parameter definitions.\n";
+                    mas::mas_log << "Configuration Error: Recruitment model \"Beverton-Holt\" has no parameter definitions.\n";
+                    this->valid_configuration = false;
+
+                } else {
+                    rapidjson::Document::MemberIterator ppit = (*pit).value.FindMember("c");
+                    if (ppit == (*pit).value.MemberEnd()) {
+                        std::cout << "Configuration Warning: Growth model \"Von Bertalannfy\" " <<
+                                "does not define \"c\". Model will use the default value of 0 and \"c\" will not be estimated.\n";
+                        mas::mas_log << "Configuration Warning: Recruitment model \"Von Bertalannfy\" " <<
+                                "does not define \"c\". Model will use the default value of 0 and \"c\" will not be estimated.\n";
+                    } else {
+
+                        bool estimated = false;
+                        int phase = 1;
+                        //1. Get initial value if there is one.
+                        rapidjson::Document::MemberIterator pm = (*ppit).value.FindMember("value");
+
+                        if (pm == (*ppit).value.MemberEnd()) {
+                            std::cout << "Configuration Warning: Growth model \"Von Bertalannfy Modified\" does not provide a initial value for \"c\".\n";
+                            mas::mas_log << "Configuration Warning: Growth model \"Von Bertalannfy Modified\" does not provide a initial value for \"c\".\n";
+                        } else {
+                            VariableTrait<REAL_T>::SetValue(vb->c, static_cast<REAL_T> ((*pm).value.GetDouble()));
+                        }
+
+                        //2. Get min boundary if there is one.
+                        pm = (*ppit).value.FindMember("min");
+                        if (pm != (*ppit).value.MemberEnd()) {
+                            VariableTrait<REAL_T>::SetMinBoundary(vb->c, static_cast<REAL_T> ((*pm).value.GetDouble()));
+                        }
+
+                        //3. Get max boundary if there is one.
+                        pm = (*ppit).value.FindMember("max");
+                        if (pm != (*ppit).value.MemberEnd()) {
+                            VariableTrait<REAL_T>::SetMaxBoundary(vb->c, static_cast<REAL_T> ((*pm).value.GetDouble()));
+                        }
+
+                        pm = (*ppit).value.FindMember("estimated");
+                        if (pm != (*ppit).value.MemberEnd()) {
+                            std::string e = std::string((*pm).value.GetString());
+                            if (e == "true") {
+                                estimated = true;
+                            }
+                        }
+
+                        if (estimated) {
+                            phase = 1;
+                            pm = (*ppit).value.FindMember("phase");
+                            if (pm != (*ppit).value.MemberEnd()) {
+                                phase = (*pm).value.GetInt();
+                            }
+                            //register alpha
+                            vb->Register(vb->c, phase);
+
+                        }
+
+                    }
+
+                    ppit = (*pit).value.FindMember("lmin");
+                    if (ppit == (*pit).value.MemberEnd()) {
+                        std::cout << "Configuration Warning: Growth model \"Von Bertalannfy Modified\" " <<
+                                "does not define \"lmin\". Model will use the default value of 0 and \"lmin\" will not be estimated.\n";
+                        mas::mas_log << "Configuration Warning: Growth model \"Von Bertalannfy Modified\" " <<
+                                "does not define \"lmin\". Model will use the default value of 0 and \"lmin\" will not be estimated.\n";
+                    } else {
+
+                        bool estimated = false;
+                        int phase = 1;
+                        //1. Get initial value if there is one.
+                        rapidjson::Document::MemberIterator pm = (*ppit).value.FindMember("value");
+
+                        if (pm == (*ppit).value.MemberEnd()) {
+                            std::cout << "Configuration Warning: Growth model \"Von Bertalannfy Modified\" does not provide a initial value for \"lmin\".\n";
+                            mas::mas_log << "Configuration Warning: Growth model \"Von Bertalannfy Modified\" does not provide a initial value for \"lmin\".\n";
+                        } else {
+                            VariableTrait<REAL_T>::SetValue(vb->lmin, static_cast<REAL_T> ((*pm).value.GetDouble()));
+                        }
+
+                        //2. Get min boundary if there is one.
+                        pm = (*ppit).value.FindMember("min");
+                        if (pm != (*ppit).value.MemberEnd()) {
+                            VariableTrait<REAL_T>::SetMinBoundary(vb->lmin, static_cast<REAL_T> ((*pm).value.GetDouble()));
+                        }
+
+                        //3. Get max boundary if there is one.
+                        pm = (*ppit).value.FindMember("max");
+                        if (pm != (*ppit).value.MemberEnd()) {
+                            VariableTrait<REAL_T>::SetMaxBoundary(vb->lmin, static_cast<REAL_T> ((*pm).value.GetDouble()));
+                        }
+
+                        pm = (*ppit).value.FindMember("estimated");
+                        if (pm != (*ppit).value.MemberEnd()) {
+                            std::string e = std::string((*pm).value.GetString());
+                            if (e == "true") {
+                                estimated = true;
+                            }
+                        }
+
+                        if (estimated) {
+                            phase = 1;
+                            pm = (*ppit).value.FindMember("phase");
+                            if (pm != (*ppit).value.MemberEnd()) {
+                                phase = (*pm).value.GetInt();
+                            }
+                            //register alpha
+                            vb->Register(vb->lmin, phase);
+
+                        }
+
+                    }
+
+                    ppit = (*pit).value.FindMember("lmax");
+                    if (ppit == (*pit).value.MemberEnd()) {
+                        std::cout << "Configuration Warning: Growth model \"Von Bertalannfy Modified\" " <<
+                                "does not define \"lmax\". Model will use the default value of 0 and \"lmax\" will not be estimated.\n";
+                        mas::mas_log << "Configuration Warning: Growth model \"Von Bertalannfy Modified\" " <<
+                                "does not define \"lmax\". Model will use the default value of 0 and \"lmax\" will not be estimated.\n";
+                    } else {
+
+                        bool estimated = false;
+                        int phase = 1;
+                        //1. Get initial value if there is one.
+                        rapidjson::Document::MemberIterator pm = (*ppit).value.FindMember("value");
+
+                        if (pm == (*ppit).value.MemberEnd()) {
+                            std::cout << "Configuration Warning: Growth model \"Von Bertalannfy Modified\" does not provide a initial value for \"lmax\".\n";
+                            mas::mas_log << "Configuration Warning: Growth model \"Von Bertalannfy Modified\" does not provide a initial value for \"lmax\".\n";
+                        } else {
+                            VariableTrait<REAL_T>::SetValue(vb->lmax, static_cast<REAL_T> ((*pm).value.GetDouble()));
+                        }
+
+                        //2. Get min boundary if there is one.
+                        pm = (*ppit).value.FindMember("min");
+                        if (pm != (*ppit).value.MemberEnd()) {
+                            VariableTrait<REAL_T>::SetMinBoundary(vb->lmax, static_cast<REAL_T> ((*pm).value.GetDouble()));
+                        }
+
+                        //3. Get max boundary if there is one.
+                        pm = (*ppit).value.FindMember("max");
+                        if (pm != (*ppit).value.MemberEnd()) {
+                            VariableTrait<REAL_T>::SetMaxBoundary(vb->lmax, static_cast<REAL_T> ((*pm).value.GetDouble()));
+                        }
+
+                        pm = (*ppit).value.FindMember("estimated");
+                        if (pm != (*ppit).value.MemberEnd()) {
+                            std::string e = std::string((*pm).value.GetString());
+                            if (e == "true") {
+                                estimated = true;
+                            }
+                        }
+
+                        if (estimated) {
+                            phase = 1;
+                            pm = (*ppit).value.FindMember("phase");
+                            if (pm != (*ppit).value.MemberEnd()) {
+                                phase = (*pm).value.GetInt();
+                            }
+                            //register alpha
+                            vb->Register(vb->lmax, phase);
+
+                        }
+
+                    }
+
 
 
                     ppit = (*pit).value.FindMember("linf");
@@ -3826,53 +4111,165 @@ namespace mas {
 
 
         }
-
-        void HandleSeason(rapidjson::Document::MemberIterator & season) {
-
-            rapidjson::Document::MemberIterator sit;
-            std::shared_ptr<mas::Season<REAL_T> > s(new mas::Season<REAL_T>());
-
-            sit = (*season).value.FindMember("id");
-            if (sit != (*season).value.MemberEnd()) {
-                s->id = (*sit).value.GetInt();
-            } else {
-                std::cout << "Configuration Error: Seasons are required to have a unique identifier.\n";
-                mas::mas_log << "Configuration Error: Seasons are required to have a unique identifier.\n";
-                this->valid_configuration = false;
-                ;
-            }
-
-            sit = (*season).value.FindMember("name");
-            if (sit != (*season).value.MemberEnd()) {
-                s->name = std::string((*sit).value.GetString());
-            } else {
-                std::cout << "Configuration Warning: Season has no name specified.\n";
-                mas::mas_log << "Configuration Warning: Season has no name specified.\n";
-            }
-
-            sit = (*season).value.FindMember("months");
-            if (sit != (*season).value.MemberEnd()) {
-                s->months = (*sit).value.GetInt();
-            } else {
-                std::cout << "Configuration Warning: Season month duration specified.\n";
-                mas::mas_log << "Configuration Warning: Season month duration specified.\n";
-            }
-
-
-            seasons_iterator it = this->seasons.find(s->id);
-            if (it != this->seasons.end()) {
-                std::cout << "Configuration Error: More than one season with the same identifier defined. Seasons require unique id.\n";
-                mas::mas_log << "Configuration Error: More than one season with the same identifier defined. Seasons require unique id.\n";
-                this->valid_configuration = false;
-                ;
-            } else {
-                this->seasons[s->id] = s;
-            }
-
-        }
+        //
+        //        void HandleSeason(rapidjson::Document::MemberIterator & season) {
+        //
+        //            rapidjson::Document::MemberIterator sit;
+        //            std::shared_ptr<mas::Season<REAL_T> > s(new mas::Season<REAL_T>());
+        //
+        //            sit = (*season).value.FindMember("id");
+        //            if (sit != (*season).value.MemberEnd()) {
+        //                s->id = (*sit).value.GetInt();
+        //            } else {
+        //                std::cout << "Configuration Error: Seasons are required to have a unique identifier.\n";
+        //                mas::mas_log << "Configuration Error: Seasons are required to have a unique identifier.\n";
+        //                this->valid_configuration = false;
+        //                ;
+        //            }
+        //
+        //            sit = (*season).value.FindMember("name");
+        //            if (sit != (*season).value.MemberEnd()) {
+        //                s->name = std::string((*sit).value.GetString());
+        //            } else {
+        //                std::cout << "Configuration Warning: Season has no name specified.\n";
+        //                mas::mas_log << "Configuration Warning: Season has no name specified.\n";
+        //            }
+        //
+        //            sit = (*season).value.FindMember("months");
+        //            if (sit != (*season).value.MemberEnd()) {
+        //                s->months = (*sit).value.GetInt();
+        //            } else {
+        //                std::cout << "Configuration Warning: Season month duration specified.\n";
+        //                mas::mas_log << "Configuration Warning: Season month duration specified.\n";
+        //            }
+        //
+        //
+        //            seasons_iterator it = this->seasons.find(s->id);
+        //            if (it != this->seasons.end()) {
+        //                std::cout << "Configuration Error: More than one season with the same identifier defined. Seasons require unique id.\n";
+        //                mas::mas_log << "Configuration Error: More than one season with the same identifier defined. Seasons require unique id.\n";
+        //                this->valid_configuration = false;
+        //                ;
+        //            } else {
+        //                this->seasons[s->id] = s;
+        //            }
+        //
+        //        }
 
         void ParseData(const std::string & path) {
 
+            netcdf_input in(path);
+
+            std::multimap<std::string, NcVar> variables = in.get_variables();
+            std::multimap<std::string, NcVar>::iterator it;
+
+            for (it = variables.begin(); it != variables.end(); ++it) {
+                DataObject<REAL_T> data;
+                data.dimensions = (*it).second.getDimCount();
+
+                std::string type;
+                (*it).second.getAtt("data_object_type").getValues(type);
+
+                std::string area;
+                (*it).second.getAtt("area").getValues(area);
+                data.area_id = StringToNumber<uint32_t>(area);
+                data.type = DataObject<REAL_T>::GetType(type);
+                std::vector<NcDim> dims = (*it).second.getDims();
+                int i, j, k, l, m, n;
+                switch (data.dimensions) {
+                    case 1:
+                        data.imax = dims[0].getSize();
+                        data.data.resize(data.imax);
+                        for (i = 0; i < data.imax; i++) {
+                            data.get(i) = in.read_float((*it).first, i);
+                        }
+                        break;
+                    case 2:
+                        data.imax = dims[0].getSize();
+                        data.jmax = dims[1].getSize();
+
+                        data.data.resize(data.imax * data.jmax);
+                        for (i = 0; i < data.imax; i++) {
+                            for (j = 0; j < data.jmax; j++) {
+                                data.get(i, j) = in.read_float((*it).first, i, j);
+                            }
+                        }
+                        break;
+                    case 3:
+                        data.imax = dims[0].getSize();
+                        data.jmax = dims[1].getSize();
+                        data.kmax = dims[2].getSize();
+                        data.data.resize(data.imax * data.jmax * data.kmax);
+                        for (i = 0; i < data.imax; i++) {
+                            for (j = 0; j < data.jmax; j++) {
+                                for (k = 0; k < data.kmax; k++) {
+                                    data.get(i, j, k) = in.read_float((*it).first, i, j, k);
+                                }
+                            }
+                        }
+                        break;
+                    case 4:
+                        data.imax = dims[0].getSize();
+                        data.jmax = dims[1].getSize();
+                        data.kmax = dims[2].getSize();
+                        data.lmax = dims[3].getSize();
+                        data.data.resize(data.imax * data.jmax * data.kmax * data.lmax);
+                        for (i = 0; i < data.imax; i++) {
+                            for (j = 0; j < data.jmax; j++) {
+                                for (k = 0; k < data.kmax; k++) {
+                                    for (l = 0; l < data.lmax; l++) {
+                                        data.get(i, j, k, l) = in.read_float((*it).first, i, j, k, l);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case 5:
+                        data.imax = dims[0].getSize();
+                        data.jmax = dims[1].getSize();
+                        data.kmax = dims[2].getSize();
+                        data.lmax = dims[3].getSize();
+                        data.lmax = dims[4].getSize();
+                        data.data.resize(data.imax * data.jmax * data.kmax * data.lmax * data.mmax);
+                        for (i = 0; i < data.imax; i++) {
+                            for (j = 0; j < data.jmax; j++) {
+                                for (k = 0; k < data.kmax; k++) {
+                                    for (l = 0; l < data.lmax; l++) {
+                                        for (m = 0; m < data.mmax; m++) {
+                                            data.get(i, j, k, l, m) = in.read_float((*it).first, i, j, k, l, m);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case 6:
+                        data.imax = dims[0].getSize();
+                        data.jmax = dims[1].getSize();
+                        data.kmax = dims[2].getSize();
+                        data.lmax = dims[3].getSize();
+                        data.mmax = dims[4].getSize();
+                        data.nmax = dims[5].getSize();
+                        data.data.resize(data.imax * data.jmax * data.kmax * data.lmax * data.mmax * data.nmax);
+                        for (i = 0; i < data.imax; i++) {
+                            for (j = 0; j < data.jmax; j++) {
+                                for (k = 0; k < data.kmax; k++) {
+                                    for (l = 0; l < data.lmax; l++) {
+                                        for (m = 0; m < data.mmax; m++) {
+                                            for (n = 0; n < data.nmax; n++) {
+                                                data.get(i, j, k, l, m, n) = in.read_float((*it).first, i, j, k, l, m, n);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                }
+
+                data_dictionary[data.area_id][data.name] = data;
+                this->areas[data.area_id]->data.push_back(data);
+            }
         }
 
         void CreateModel() {
@@ -3900,8 +4297,8 @@ namespace mas {
                     area->recruitment_model = (*rit).second;
                 }
 
-                mortality_model_iterator mit = this->mortality_models.find(area->mortality_model_id);
-                if (mit == this->mortality_models.end()) {
+                natural_mortality_model_iterator mit = this->natural_mortality_models.find(area->mortality_model_id);
+                if (mit == this->natural_mortality_models.end()) {
                     std::cout << "Configuration Error: Mortality model " << area->mortality_model_id << " has not been defined.\n";
                     mas_log << "Configuration Error: Mortality model " << area->mortality_model_id << " has not been defined.\n";
                     this->valid_configuration = false;
@@ -3924,12 +4321,18 @@ namespace mas {
 
                 mas::Population<REAL_T>* population = (*pit).second.get();
 
-                if (population->initial_population_males.size() < this->ages.size()) {
-                    std::cout << "Configuration Error: Initial population vector size for population " << population->natal_area_id << " not equal to declared ages of size " << this->ages.size() << ".\n";
-                    mas_log << "Configuration Error: Initial population vector size for population " << population->natal_area_id << " not equal to declared ages of size " << this->ages.size() << ".\n";
-                    this->valid_configuration = false;
-                }
+                population->years = this->nyears;
+                population->seasons = this->nseasons;
 
+                population->initial_population_males.resize(this->ages.size());
+                population->initial_population_females.resize(this->ages.size());
+                //                if (population->initial_population_males.size() < this->ages.size()) {
+                //                    std::cout << "Configuration Error: Initial population vector size of "<<population->initial_population_males.size()<<" for population " << population->natal_area_id << " not equal to declared ages of size " << this->ages.size() << ".\n";
+                //                    mas_log << "Configuration Error: Initial population vector size for population " << population->natal_area_id << " not equal to declared ages of size " << this->ages.size() << ".\n";
+                //                    this->valid_configuration = false;
+                //                }
+
+                std::cout << "areas size = " << areas.size() << "\n";
                 area_iterator ait = this->areas.find(population->natal_area_id);
 
                 if (ait != this->areas.end()) {
@@ -3944,18 +4347,48 @@ namespace mas {
                     population->areas_list.push_back((*ait).second);
                     mas::PopulationInfo<REAL_T>& male_pop_info = population->male_cohorts[(*ait).second->id];
                     male_pop_info.natal_area = population->natal_area;
+                    male_pop_info.natal_population = population;
                     male_pop_info.area = (*ait).second;
+
+                    typename mas::Population<REAL_T>::male_natural_mortality_ids_iterator mit;
+                    mit = population->male_natural_mortality_ids.find(male_pop_info.area->id);
+
+                    if (mit != population->male_natural_mortality_ids.end()) {
+                        male_pop_info.natural_mortality = this->natural_mortality_models[(*mit).second];
+                        std::cout << "Retrieving natural mortality " << male_pop_info.natural_mortality->id << "\n";
+                    } else {
+                        std::cout << "Configuration Error: Male natural mortality for population " << population->id << " in area " << male_pop_info.area->id << " has not been defined.\n";
+                        mas_log << "Configuration Error: Male natural mortality for population " << population->id << " in area " << male_pop_info.area->id << " has not been defined.\n";
+                        this->valid_configuration = false;
+                    }
+
+
                     male_pop_info.years = this->nyears;
                     male_pop_info.seasons = this->nseasons;
                     male_pop_info.ages = this->ages;
+                    male_pop_info.male_chohorts = true;
                     male_pop_info.Initialize();
 
                     mas::PopulationInfo<REAL_T>& female_pop_info = population->female_cohorts[(*ait).second->id];
                     female_pop_info.natal_area = population->natal_area;
+                    female_pop_info.natal_population = population;
                     female_pop_info.area = (*ait).second;
+
+                    typename mas::Population<REAL_T>::female_natural_mortality_ids_iterator fit;
+                    fit = population->female_natural_mortality_ids.find(female_pop_info.area->id);
+
+                    if (fit != population->female_natural_mortality_ids.end()) {
+                        female_pop_info.natural_mortality = this->natural_mortality_models[(*fit).second];
+                        std::cout << "Retrieving natural mortality " << female_pop_info.natural_mortality->id << "\n";
+                    } else {
+                        std::cout << "Configuration Error: Female natural mortality for population " << population->id << " in area " << male_pop_info.area->id << " has not been defined.\n";
+                        mas_log << "Configuration Error: Female natural mortality for population " << population->id << " in area " << male_pop_info.area->id << " has not been defined.\n";
+                        this->valid_configuration = false;
+                    }
                     female_pop_info.years = this->nyears;
                     female_pop_info.seasons = this->nseasons;
                     female_pop_info.ages = this->ages;
+                    female_pop_info.male_chohorts = false;
                     female_pop_info.Initialize();
                 }
 
@@ -3980,7 +4413,7 @@ namespace mas {
                 std::cout << *population << "\n";
             }
 
-            this->nseasons = this->seasons.size();
+            //            this->nseasons = this->seasons.size();
 
             mas_log << "Estimated Parameters\t\t\t\t\t\tPhase\n";
             mas_log << "\nRecruitment:\n";
@@ -3989,7 +4422,7 @@ namespace mas {
                 typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
                 for (it = (*rit).second->estimated_parameters_map.begin(); it != (*rit).second->estimated_parameters_map.end(); ++it) {
                     mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
-                    this->Register(*(*it).first,(*it).second);
+                    this->Register(*(*it).first, (*it).second);
                 }
 
             }
@@ -3999,7 +4432,7 @@ namespace mas {
                 typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
                 for (it = (*git).second->estimated_parameters_map.begin(); it != (*git).second->estimated_parameters_map.end(); ++it) {
                     mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
-                     this->Register(*(*it).first,(*it).second);
+                    this->Register(*(*it).first, (*it).second);
                 }
 
             }
@@ -4010,7 +4443,8 @@ namespace mas {
                 typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
                 for (it = (*sit).second->estimated_parameters_map.begin(); it != (*sit).second->estimated_parameters_map.end(); ++it) {
                     mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
-                     this->Register(*(*it).first,(*it).second);
+                    this->Register(*(*it).first, (*it).second);
+
                 }
 
             }
@@ -4021,14 +4455,98 @@ namespace mas {
                 typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
                 for (it = (*mit).second->estimated_parameters_map.begin(); it != (*mit).second->estimated_parameters_map.end(); ++it) {
                     mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
-                     this->Register(*(*it).first,(*it).second);
+                    this->Register(*(*it).first, (*it).second);
                 }
 
             }
-            std::cout<<"Estimated parameters:\n";
-             typename mas::ModelObject<REAL_T>::estimable_parameter_iterator eit;
-            for(eit = this->estimated_parameters_map.begin(); eit != this->estimated_parameters_map.end(); ++eit){
-                std::cout<<(*eit).first->GetName()<<" "<<(*eit).second<<"\n";
+            mas_log << "\nNatural Mortality:\n";
+            natural_mortality_model_iterator mmit;
+            for (mmit = this->natural_mortality_models.begin(); mmit != this->natural_mortality_models.end(); ++mmit) {
+                if ((*mmit).second->mortality_vector.size() != this->ages.size()) {
+                    this->valid_configuration = false;
+                    std::cout << "Configuration Error: Natural mortality vector for model \"" << (*mmit).second->id << "\" not eqaul to " << ages.size() << "\n";
+                    mas_log << "Configuration Error: Natural mortality vector for model \"" << (*mmit).second->id << "\" not eqaul to " << ages.size() << "\n";
+
+                }
+                typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
+                for (it = (*mmit).second->estimated_parameters_map.begin(); it != (*mmit).second->estimated_parameters_map.end(); ++it) {
+                    mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
+                    this->Register(*(*it).first, (*it).second);
+                }
+
+                //            for (int a = 0; a <this->ages.size(); a++) {
+                //                (*mmit).second->male_mortality[this->ages[a]] = (*mmit).second->male_mortality_vector[a];
+                //                (*mmit).second->female_mortality[this->ages[a]] = (*mmit).second->female_mortality_vector[a];
+                //
+                //            }
+
+            }
+
+
+
+            std::cout << "number of fleets = " << this->fleets.size() << "\n";
+
+
+            fleet_iterator fit;
+            for (fit = this->fleets.begin(); fit != this->fleets.end(); ++fit) {
+                typename Fleet<REAL_T>::season_area_id_iterator sit;
+                std::cout << "season_area_selectivity_ids = " << (*fit).second->season_area_selectivity_ids.size() << "\n";
+                for (sit = (*fit).second->season_area_selectivity_ids.begin(); sit != (*fit).second->season_area_selectivity_ids.end(); ++sit) {
+                    typename Fleet<REAL_T>::area_id_iteraor ait;
+                    int season = (*sit).first;
+                    for (ait = (*sit).second.begin(); ait != (*sit).second.end(); ++ait) {
+                        int area = (*ait).first;
+                        int id = (*ait).second;
+                        (*fit).second->area_season_selectivity[area][season] = this->selectivity_models[id];
+                        (*fit).second->season_area_selectivity[season][area] = this->selectivity_models[id];
+                    }
+                }
+
+                std::cout << "season_area_fishing_mortality_ids = " << (*fit).second->season_area_fishing_mortality_ids.size() << "\n";
+                for (sit = (*fit).second->season_area_fishing_mortality_ids.begin(); sit != (*fit).second->season_area_fishing_mortality_ids.end(); ++sit) {
+                    typename Fleet<REAL_T>::area_id_iteraor ait;
+                    int season = (*sit).first;
+                    for (ait = (*sit).second.begin(); ait != (*sit).second.end(); ++ait) {
+                        int area = (*ait).first;
+                        int id = (*ait).second;
+                        (*fit).second->area_season_fishing_mortality[area][season] = this->finshing_mortality_models[id];
+                        (*fit).second->season_area_fishing_mortality[season][area] = this->finshing_mortality_models[id];
+                        this->areas[area]->seasonal_fleet_operations[season].push_back((*fit).second);
+
+                        std::cout << "Area " << area << " season " << season << " " << (*fit).second->id << ", nfleets = " << this->areas[area]->seasonal_fleet_operations[season].size() << "\n";
+                    }
+                }
+
+            }
+            // exit(0);
+
+            //            for (fit = this->fleets.begin(); fit != this->fleets.end(); ++fit) {
+            //                typename Fleet<REAL_T>::season_area_selectivity_iterator sait;
+            //                for (sait = (*fit).second->season_area_selectivity.begin(); sait != (*fit).second->season_area_selectivity.end(); ++sait) {
+            //                    int season = (*sait).first;
+            //                    typename Fleet<REAL_T>::area_sectivity_iterator ait;
+            //                    for (ait = (*sait).second.begin(); ait != (*sait).second.begin(); ++ait) {
+            //                        int area = (*ait).first;
+            //                        this->areas[area]->seasonal_fleet_operations[season].push_back((*fit).second);
+            //                    }
+            //                }
+            //                
+            //                typename Fleet<REAL_T>::season_area_fishing_mortality_iterator sait;
+            //                for (sait = (*fit).second->season_area_selectivity.begin(); sait != (*fit).second->season_area_selectivity.end(); ++sait) {
+            //                    int season = (*sait).first;
+            //                    typename Fleet<REAL_T>::area_sectivity_iterator ait;
+            //                    for (ait = (*sait).second.begin(); ait != (*sait).second.begin(); ++ait) {
+            //                        int area = (*ait).first;
+            //                        this->areas[area]->seasonal_fleet_operations[season].push_back((*fit).second);
+            //                    }
+            //                }
+            //            }
+
+
+            std::cout << "Estimated parameters:\n";
+            typename mas::ModelObject<REAL_T>::estimable_parameter_iterator eit;
+            for (eit = this->estimated_parameters_map.begin(); eit != this->estimated_parameters_map.end(); ++eit) {
+                std::cout << (*eit).first->GetName() << " " << (*eit).second << "\n";
             }
 
 
@@ -4040,6 +4558,16 @@ namespace mas {
             }
 
         }
+
+        std::unordered_map<int, std::shared_ptr<mas::Population<REAL_T> > >& GetPopulations() {
+            return populations;
+        }
+
+
+
+
+
+
 
     private:
 

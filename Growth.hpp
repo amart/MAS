@@ -68,6 +68,24 @@ namespace mas {
     };
 
     template<typename REAL_T>
+    struct VonBertalanffyModified : GrowthBase<REAL_T> {
+        typedef typename VariableTrait<REAL_T>::variable variable;
+        variable lmin;
+        variable lmax;
+        variable l_inf;
+        variable c;
+
+        const variable Evaluate(const variable& age) {
+            return lmin + (lmax - lmin)*((static_cast<REAL_T> (1.0) -
+                    (atl::pow(c, age - this->a_min))) / (static_cast<REAL_T> (1.0) - atl::pow(c,this->a_max - this->a_min)));
+        }
+
+        virtual const std::string Name() {
+            return "Von Bertalanffy";
+        }
+    };
+
+    template<typename REAL_T>
     struct SchnuteCaseI : GrowthBase<REAL_T > {
         typedef typename VariableTrait<REAL_T>::variable variable;
         variable alpha;

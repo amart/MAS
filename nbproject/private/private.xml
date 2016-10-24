@@ -2,6 +2,26 @@
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <data xmlns="http://www.netbeans.org/ns/make-project-private/1">
         <activeConfTypeElem>1</activeConfTypeElem>
-        <activeConfIndexElem>1</activeConfIndexElem>
+        <activeConfIndexElem>0</activeConfIndexElem>
     </data>
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/MAS.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/Area.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/Selectivity.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/Growth.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/Movement.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/Population.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/Mortality.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/Fleet.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/Fecundity.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/ThreadPool.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/Information.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/Common.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/Season.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/Recruitment.hpp</file>
+            <file>file:/Users/matthewsupernaw/NetBeansProjects/MAS2/config.json</file>
+        </group>
+    </open-files>
 </project-private>

@@ -33,13 +33,41 @@
 #ifndef MAS_MORTALITY_HPP
 #define MAS_MORTALITY_HPP
 
+#include "Common.hpp"
+
+
 namespace mas {
 
     template<typename REAL_T>
-    struct Mortality : mas::ModelObject<REAL_T> {
+    struct NaturalMortality : mas::ModelObject<REAL_T> {
         typedef typename VariableTrait<REAL_T>::variable variable;
-        std::vector<variable> male_mortality;
-        std::vector<variable> female_mortality;
+        std::vector<variable> mortality_vector;
+
+        std::unordered_map<REAL_T, variable> mortality;
+        
+        typedef typename std::unordered_map<REAL_T, variable>::iterator mortality_iterator;
+
+        const variable Evaluate(const int& age_index) {
+            return mortality_vector[age_index];
+
+        }
+
+        virtual const std::string Name() {
+            return "Natural Mortality";
+        }
+
+    };
+    
+    
+     template<typename REAL_T>
+    struct FishingMortality : mas::ModelObject<REAL_T> {
+        typedef typename VariableTrait<REAL_T>::variable variable;
+        std::vector<std::vector<variable> > fishing_mortality;
+
+        const variable Evaluate(const int& year, const int& season) {
+//            std::cout<<__func__<<"\n size ==== "<<this->id<<"\n";
+            return fishing_mortality[year][season];
+        }
 
         virtual const std::string Name() {
             return "Natural Mortality";
@@ -47,6 +75,14 @@ namespace mas {
 
     };
 
+    
+    template<typename REAL_T>
+    std::ostream& operator <<(std::ostream& out, const FishingMortality<REAL_T>& fm ){
+        std::cout<<"Fishing Mortality{\n";
+        std::cout<<"id "<<fm.id<<"\n";
+        std::cout<<"matrix["<<fm.fishing_mortality.size()<<"\n}";
+        return out;
+    }
 
 }
 

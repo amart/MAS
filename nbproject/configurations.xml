@@ -39,7 +39,9 @@
                    kind="IMPORTANT_FILES_FOLDER">
       <itemPath>Makefile</itemPath>
     </logicalFolder>
+    <itemPath>/Users/matthewsupernaw/NetBeansProjects/MAS2/NetCDF.hpp</itemPath>
     <itemPath>/Users/matthewsupernaw/NetBeansProjects/MAS2/config.json</itemPath>
+    <itemPath>/Users/matthewsupernaw/NetBeansProjects/MAS2/mas_cas31.json</itemPath>
   </logicalFolder>
   <sourceRootList>
     <Elem>/Users/matthewsupernaw/NetBeansProjects/MAS2</Elem>
@@ -55,7 +57,16 @@
       <compileType>
         <ccTool>
           <standard>8</standard>
+          <incDir>
+            <pElem>/usr/local/include</pElem>
+          </incDir>
         </ccTool>
+        <linkerTool>
+          <linkerLibItems>
+            <linkerLibFileItem>/usr/local/lib/libnetcdf.a</linkerLibFileItem>
+            <linkerLibFileItem>/usr/local/lib/libnetcdf-cxx4.dylib</linkerLibFileItem>
+          </linkerLibItems>
+        </linkerTool>
       </compileType>
       <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/Area.hpp"
             ex="false"
@@ -102,6 +113,11 @@
             tool="3"
             flavor2="0">
       </item>
+      <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/NetCDF.hpp"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/Population.hpp"
             ex="false"
             tool="3"
@@ -128,6 +144,11 @@
             flavor2="0">
       </item>
       <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/config.json"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/mas_cas31.json"
             ex="false"
             tool="3"
             flavor2="0">
@@ -146,8 +167,11 @@
           <developmentMode>5</developmentMode>
         </cTool>
         <ccTool>
-          <developmentMode>5</developmentMode>
+          <developmentMode>6</developmentMode>
           <standard>8</standard>
+          <incDir>
+            <pElem>/usr/local/include</pElem>
+          </incDir>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
@@ -155,6 +179,12 @@
         <asmTool>
           <developmentMode>5</developmentMode>
         </asmTool>
+        <linkerTool>
+          <linkerLibItems>
+            <linkerLibFileItem>/usr/local/lib/libnetcdf.a</linkerLibFileItem>
+            <linkerLibFileItem>/usr/local/lib/libnetcdf-cxx4.dylib</linkerLibFileItem>
+          </linkerLibItems>
+        </linkerTool>
       </compileType>
       <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/Area.hpp"
             ex="false"
@@ -201,6 +231,11 @@
             tool="3"
             flavor2="0">
       </item>
+      <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/NetCDF.hpp"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/Population.hpp"
             ex="false"
             tool="3"
@@ -227,6 +262,11 @@
             flavor2="0">
       </item>
       <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/config.json"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/mas_cas31.json"
             ex="false"
             tool="3"
             flavor2="0">
