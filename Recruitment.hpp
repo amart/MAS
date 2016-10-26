@@ -38,7 +38,9 @@ namespace mas {
     template<typename REAL_T>
     struct RecruitmentBase : mas::ModelObject<REAL_T> {
         typedef typename mas::VariableTrait<REAL_T>::variable variable;
-
+        std::vector<variable> recruitment_deviations;
+        variable sigma_r;
+        variable rho;
 
         virtual const variable Evaluate(const variable& s) = 0;
 

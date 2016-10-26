@@ -42,6 +42,7 @@
     <itemPath>/Users/matthewsupernaw/NetBeansProjects/MAS2/NetCDF.hpp</itemPath>
     <itemPath>/Users/matthewsupernaw/NetBeansProjects/MAS2/config.json</itemPath>
     <itemPath>/Users/matthewsupernaw/NetBeansProjects/MAS2/mas_cas31.json</itemPath>
+    <itemPath>/Users/matthewsupernaw/NetBeansProjects/MAS2/notes.txt</itemPath>
   </logicalFolder>
   <sourceRootList>
     <Elem>/Users/matthewsupernaw/NetBeansProjects/MAS2</Elem>
@@ -149,6 +150,11 @@
             flavor2="0">
       </item>
       <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/mas_cas31.json"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/notes.txt"
             ex="false"
             tool="3"
             flavor2="0">
@@ -267,6 +273,11 @@
             flavor2="0">
       </item>
       <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/mas_cas31.json"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="/Users/matthewsupernaw/NetBeansProjects/MAS2/notes.txt"
             ex="false"
             tool="3"
             flavor2="0">
