@@ -5,7 +5,7 @@
     "data": "mas_case1.nc",
     "years": 30,
     "seasons": 1,
-    "ages": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "ages": [0.01, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     "first_year": -9,
     "last_year": 20,
     "season": {
@@ -407,6 +407,7 @@
         ],
         "recruitment_type": "natal",
         "parameters": {
+            "growth":1,
             "initial_numbers": [
                 {
                     "sex": "male",
@@ -507,7 +508,7 @@
                     "area": 2,
                     "sex": "female"
                 }
-            ]
+            ]   
         }
     },
     "population": {
@@ -638,6 +639,7 @@
         ],
         "recruitment_type": "natal",
         "parameters": {
+            "growth":1,
             "initial_numbers": [
                 {
                     "sex": "male",

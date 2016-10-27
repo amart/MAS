@@ -81,7 +81,7 @@ namespace mas {
         }
 
         virtual const std::string Name() {
-            return "Von Bertalanffy";
+            return "Von Bertalanffy modified";
         }
     };
 

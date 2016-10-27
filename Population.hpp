@@ -45,6 +45,7 @@ namespace mas {
         bool natal_homing = false;
         std::shared_ptr<Area<REAL_T> > area;
         std::shared_ptr<Area<REAL_T> > natal_area;
+        std::shared_ptr<GrowthBase<REAL_T> > growth_model;
         std::shared_ptr<mas::NaturalMortality<REAL_T> > natural_mortality_model; //area specific   
         std::map<int, std::shared_ptr<mas::RecruitmentBase<REAL_T> > > recruitment_model; //season area specific  
         typedef typename std::map<int, std::shared_ptr<mas::RecruitmentBase<REAL_T> > >::iterator recruitment_model_iterator;
@@ -55,6 +56,7 @@ namespace mas {
 
         std::vector<variable> imigrants;
         std::vector<variable> emigrants;
+        std::vector<variable> growth;
         std::vector<variable> recruitment;
         std::vector<variable> abundance;
         std::vector<variable> spawning_biomass;
@@ -74,6 +76,7 @@ namespace mas {
             F.resize(years * seasons * ages.size());
             emigrants.resize(years * seasons * ages.size());
             imigrants.resize(years * seasons * ages.size());
+            growth.resize(years * seasons * ages.size());
             Z.resize(years * seasons * ages.size());
             S.resize(years * seasons * ages.size());
             N.resize(years * seasons * ages.size());
@@ -88,7 +91,6 @@ namespace mas {
          * @param season
          */
         inline void Recruitment(int year, int season) {
-            //            if (this->recruitment_model.get() != NULL) {
             //#warning add compiler hint here
             if (years == 0 && season == 1) {
                 for (int a = 0; a< this->ages.size(); a++) {
@@ -97,12 +99,11 @@ namespace mas {
             } else {
                 recruitment_model_iterator rit = this->recruitment_model.find(season);
                 if (rit != this->recruitment_model.end()) {
-
+//                    std::cout << this->growth_model->Evaluate(this->ages[0]) << " ";
 
 
                 }
             }
-            //            }
         }
 
         /**
@@ -112,11 +113,10 @@ namespace mas {
          * @param season
          */
         inline void Growth(int year, int season) {
-            if (natal_homing) {
-                //use natal area parameters
-
-            } else {
-                // use  area parameters
+            growth[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size()] = variable(.01);
+            for (int a = 1; a< this->ages.size(); a++) {
+                growth[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size() + a] =
+                        this->area->growth_model->Evaluate(this->ages[a]);
             }
         }
 
@@ -309,6 +309,25 @@ namespace mas {
             out << "\n";
         }
         out << "\n\n";
+
+        out << "Population " << pi.natal_population->id << "\n";
+        out << "Area " << pi.area->id << "\n";
+        out << "Growth Pattern \n";
+        if (pi.male_chohorts) {
+            out << "Males\n";
+        } else {
+            out << "Females\n";
+        }
+        for (int a = 0; a < pi.ages.size(); a++) {
+            for (int y = 0; y < pi.years; y++) {
+                for (int s = 0; s < pi.seasons; s++) {
+                    out << pi.growth[y * pi.seasons * pi.ages.size() + s * pi.ages.size() + a] << " ";
+                }
+            }
+            out << "\n";
+        }
+        out << "\n\n";
+
         return out;
     }
 
@@ -351,6 +370,8 @@ namespace mas {
         int seasons;
         int areas;
         int ages;
+        int growth_id;
+        
         std::shared_ptr<Area<REAL_T> > natal_area; //birth area
         std::vector<std::shared_ptr<Area<REAL_T> > > areas_list; //all areas
 
@@ -537,6 +558,8 @@ namespace mas {
                             male_cohorts[areas_list[a]->id].Mortality(y, s);
                             female_cohorts[areas_list[a]->id].Mortality(y, s);
 
+                            male_cohorts[areas_list[a]->id].Growth(y, s);
+                            female_cohorts[areas_list[a]->id].Growth(y, s);
 
 
                             male_cohorts[areas_list[a]->id].NumbersAtAge(y, s);

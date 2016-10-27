@@ -200,7 +200,9 @@ int main(int argc, char** argv) {
         (*it).second->Show();
     }
 
-
+    std::cout <<atl::Variable<double>::gradient_structure_g.stack_current<<"\n";
+    
+   
     exit(0);
     //    
     ////    create();

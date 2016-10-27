@@ -845,8 +845,8 @@ namespace mas {
             rit = (*population_model).value.FindMember("parameters");
 
             if (rit == (*population_model).value.MemberEnd()) {
-                std::cout << "Configuration Error: Population is required to define paramters.";
-                mas_log << "Configuration Error: Population is required to define paramters.";
+                std::cout << "Configuration Error: Population is required to define parameters.";
+                mas_log << "Configuration Error: Population is required to define parameters.";
                 this->valid_configuration = false;
                 return;
 
@@ -918,6 +918,14 @@ namespace mas {
                 mas_log << "Configuration Error: initial_numbers for population \"" << model->id << "\" must be a vector.\n";
             }
 
+            in_it = (*rit).value.FindMember("growth");
+            if (in_it != (*rit).value.MemberEnd()) {
+                model->growth_id = (*in_it).value.GetInt();
+            } else {
+                std::cout << "Configuration Warning: Growth model not defined in population.\n";
+                mas::mas_log << "Configuration Warning: Growth model not defined in population.\n";
+            }
+
             in_it = (*rit).value.FindMember("natural_mortality");
             if (in_it != (*rit).value.MemberEnd()) {
 
@@ -960,6 +968,8 @@ namespace mas {
                         }
 
 
+
+
                         if (sex == "female") {
                             model->female_natural_mortality_ids[a] = m;
                         } else {
@@ -967,9 +977,6 @@ namespace mas {
                         }
 
                     }
-
-
-
                 }
 
             }
@@ -4574,6 +4581,16 @@ namespace mas {
                     male_pop_info.natal_population = population;
                     male_pop_info.area = (*ait).second;
 
+                    growth_model_iterator git = this->growth_models.find(population->growth_id);
+                    if (git != this->growth_models.end()) {
+                        male_pop_info.growth_model = this->growth_models[population->growth_id];
+                    } else {
+                        std::cout << "Configuration Error: Growth for population " << population->id << " has not been defined.\n";
+                        mas_log << "Configuration Error: Growth for population " << population->id << " has not been defined.\n";
+                        this->valid_configuration = false;
+                    }
+
+
                     typename mas::Population<REAL_T>::male_natural_mortality_ids_iterator mit;
                     mit = population->male_natural_mortality_ids.find(male_pop_info.area->id);
 
@@ -4616,6 +4633,14 @@ namespace mas {
                     female_pop_info.natal_population = population;
                     female_pop_info.area = (*ait).second;
 
+                    if (git != this->growth_models.end()) {
+                        female_pop_info.growth_model = this->growth_models[population->growth_id];
+                    } else {
+                        std::cout << "Configuration Error: Growth for population " << population->id << " has not been defined.\n";
+                        mas_log << "Configuration Error: Growth for population " << population->id << " has not been defined.\n";
+                        this->valid_configuration = false;
+                    }
+
                     typename mas::Population<REAL_T>::female_natural_mortality_ids_iterator fit;
                     fit = population->female_natural_mortality_ids.find(female_pop_info.area->id);
 
@@ -4628,7 +4653,7 @@ namespace mas {
                     }
 
 
-//                    typename mas::Population<REAL_T>::recruitment_ids_iterator rit;
+                    //                    typename mas::Population<REAL_T>::recruitment_ids_iterator rit;
                     rit = population->recruitment_ids.find(female_pop_info.area->id);
 
                     if (rit != population->recruitment_ids.end()) {
@@ -4642,200 +4667,200 @@ namespace mas {
                         }
                     }
 
-                        female_pop_info.years = this->nyears;
-                        female_pop_info.seasons = this->nseasons;
-                        female_pop_info.ages = this->ages;
-                        female_pop_info.male_chohorts = false;
-                        female_pop_info.Initialize();
-                    }
-
-
-
-                    //                movement_model_iterator move_it = this->movement_models.find(population->movement_model_id);
-                    //                if (move_it != this->movement_models.end()) {
-                    //                    population->movement_model = (*move_it).second;
-                    //                } else {
-                    //                    std::cout << "Configuration Error:  Movement model " << population->movement_model_id << " has not been defined.\n";
-                    //                    mas_log << "Configuration Error:  Movement model " << population->movement_model_id << " has not been defined.\n";
-                    //                }
-
-                    typename mas::Population<REAL_T>::movement_model_id_iterator mmit;
-                    for (mmit = population->movement_models_ids.begin(); mmit != population->movement_models_ids.end(); ++mmit) {
-
-                        int year = (*mmit).first;
-                        int model = (*mmit).second;
-
-                        movement_model_iterator mm = this->movement_models.find(model);
-                        if (mm != this->movement_models.end()) {
-                            population->movement_models[year] = (*mm).second;
-                        } else {
-                            std::cout << "Configuration Error:  Movement model " << model << " has not been defined.\n";
-                            mas_log << "Configuration Error:  Movement model " << model << " has not been defined.\n";
-                            this->valid_configuration = false;
-                        }
-
-                    }
-
+                    female_pop_info.years = this->nyears;
+                    female_pop_info.seasons = this->nseasons;
+                    female_pop_info.ages = this->ages;
+                    female_pop_info.male_chohorts = false;
+                    female_pop_info.Initialize();
                 }
 
-                //            this->nseasons = this->seasons.size();
 
-                mas_log << "Estimated Parameters\t\t\t\t\t\tPhase\n";
-                mas_log << "\nRecruitment:\n";
-                recruitment_model_iterator rit;
-                for (rit = this->recruitment_models.begin(); rit != this->recruitment_models.end(); ++rit) {
-                    typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
-                    for (it = (*rit).second->estimated_parameters_map.begin(); it != (*rit).second->estimated_parameters_map.end(); ++it) {
-                        mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
-                        this->Register(*(*it).first, (*it).second);
-                    }
 
-                }
-                mas_log << "\nGrowth:\n";
-                growth_model_iterator git;
-                for (git = this->growth_models.begin(); git != this->growth_models.end(); ++git) {
-                    typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
-                    for (it = (*git).second->estimated_parameters_map.begin(); it != (*git).second->estimated_parameters_map.end(); ++it) {
-                        mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
-                        this->Register(*(*it).first, (*it).second);
-                    }
+                //                movement_model_iterator move_it = this->movement_models.find(population->movement_model_id);
+                //                if (move_it != this->movement_models.end()) {
+                //                    population->movement_model = (*move_it).second;
+                //                } else {
+                //                    std::cout << "Configuration Error:  Movement model " << population->movement_model_id << " has not been defined.\n";
+                //                    mas_log << "Configuration Error:  Movement model " << population->movement_model_id << " has not been defined.\n";
+                //                }
 
-                }
+                typename mas::Population<REAL_T>::movement_model_id_iterator mmit;
+                for (mmit = population->movement_models_ids.begin(); mmit != population->movement_models_ids.end(); ++mmit) {
 
-                mas_log << "\nSelectivity:\n";
-                selectivity_model_iterator sit;
-                for (sit = this->selectivity_models.begin(); sit != this->selectivity_models.end(); ++sit) {
-                    typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
-                    for (it = (*sit).second->estimated_parameters_map.begin(); it != (*sit).second->estimated_parameters_map.end(); ++it) {
-                        mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
-                        this->Register(*(*it).first, (*it).second);
+                    int year = (*mmit).first;
+                    int model = (*mmit).second;
 
-                    }
-
-                }
-
-                mas_log << "\nMovement:\n";
-                movement_model_iterator mit;
-                for (mit = this->movement_models.begin(); mit != this->movement_models.end(); ++mit) {
-                    typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
-                    for (it = (*mit).second->estimated_parameters_map.begin(); it != (*mit).second->estimated_parameters_map.end(); ++it) {
-                        mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
-                        this->Register(*(*it).first, (*it).second);
-                    }
-
-                }
-                mas_log << "\nNatural Mortality:\n";
-                natural_mortality_model_iterator mmit;
-                for (mmit = this->natural_mortality_models.begin(); mmit != this->natural_mortality_models.end(); ++mmit) {
-                    if ((*mmit).second->mortality_vector.size() != this->ages.size()) {
+                    movement_model_iterator mm = this->movement_models.find(model);
+                    if (mm != this->movement_models.end()) {
+                        population->movement_models[year] = (*mm).second;
+                    } else {
+                        std::cout << "Configuration Error:  Movement model " << model << " has not been defined.\n";
+                        mas_log << "Configuration Error:  Movement model " << model << " has not been defined.\n";
                         this->valid_configuration = false;
-                        std::cout << "Configuration Error: Natural mortality vector for model \"" << (*mmit).second->id << "\" not eqaul to " << ages.size() << "\n";
-                        mas_log << "Configuration Error: Natural mortality vector for model \"" << (*mmit).second->id << "\" not eqaul to " << ages.size() << "\n";
-
-                    }
-                    typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
-                    for (it = (*mmit).second->estimated_parameters_map.begin(); it != (*mmit).second->estimated_parameters_map.end(); ++it) {
-                        mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
-                        this->Register(*(*it).first, (*it).second);
                     }
 
-                    //            for (int a = 0; a <this->ages.size(); a++) {
-                    //                (*mmit).second->male_mortality[this->ages[a]] = (*mmit).second->male_mortality_vector[a];
-                    //                (*mmit).second->female_mortality[this->ages[a]] = (*mmit).second->female_mortality_vector[a];
-                    //
-                    //            }
-
-                }
-
-
-
-
-
-                fleet_iterator fit;
-                for (fit = this->fleets.begin(); fit != this->fleets.end(); ++fit) {
-                    typename Fleet<REAL_T>::season_area_id_iterator sit;
-                    for (sit = (*fit).second->season_area_selectivity_ids.begin(); sit != (*fit).second->season_area_selectivity_ids.end(); ++sit) {
-                        typename Fleet<REAL_T>::area_id_iteraor ait;
-                        int season = (*sit).first;
-                        for (ait = (*sit).second.begin(); ait != (*sit).second.end(); ++ait) {
-                            int area = (*ait).first;
-                            int id = (*ait).second;
-                            (*fit).second->area_season_selectivity[area][season] = this->selectivity_models[id];
-                            (*fit).second->season_area_selectivity[season][area] = this->selectivity_models[id];
-                        }
-                    }
-
-                    for (sit = (*fit).second->season_area_fishing_mortality_ids.begin(); sit != (*fit).second->season_area_fishing_mortality_ids.end(); ++sit) {
-                        typename Fleet<REAL_T>::area_id_iteraor ait;
-                        int season = (*sit).first;
-                        for (ait = (*sit).second.begin(); ait != (*sit).second.end(); ++ait) {
-                            int area = (*ait).first;
-                            int id = (*ait).second;
-                            (*fit).second->area_season_fishing_mortality[area][season] = this->finshing_mortality_models[id];
-                            (*fit).second->season_area_fishing_mortality[season][area] = this->finshing_mortality_models[id];
-                            this->areas[area]->seasonal_fleet_operations[season].push_back((*fit).second);
-
-                        }
-                    }
-
-                }
-                // exit(0);
-
-                //            for (fit = this->fleets.begin(); fit != this->fleets.end(); ++fit) {
-                //                typename Fleet<REAL_T>::season_area_selectivity_iterator sait;
-                //                for (sait = (*fit).second->season_area_selectivity.begin(); sait != (*fit).second->season_area_selectivity.end(); ++sait) {
-                //                    int season = (*sait).first;
-                //                    typename Fleet<REAL_T>::area_sectivity_iterator ait;
-                //                    for (ait = (*sait).second.begin(); ait != (*sait).second.begin(); ++ait) {
-                //                        int area = (*ait).first;
-                //                        this->areas[area]->seasonal_fleet_operations[season].push_back((*fit).second);
-                //                    }
-                //                }
-                //                
-                //                typename Fleet<REAL_T>::season_area_fishing_mortality_iterator sait;
-                //                for (sait = (*fit).second->season_area_selectivity.begin(); sait != (*fit).second->season_area_selectivity.end(); ++sait) {
-                //                    int season = (*sait).first;
-                //                    typename Fleet<REAL_T>::area_sectivity_iterator ait;
-                //                    for (ait = (*sait).second.begin(); ait != (*sait).second.begin(); ++ait) {
-                //                        int area = (*ait).first;
-                //                        this->areas[area]->seasonal_fleet_operations[season].push_back((*fit).second);
-                //                    }
-                //                }
-                //            }
-
-
-                //            std::cout << "Estimated parameters:\n";
-                //            typename mas::ModelObject<REAL_T>::estimable_parameter_iterator eit;
-                //            for (eit = this->estimated_parameters_map.begin(); eit != this->estimated_parameters_map.end(); ++eit) {
-                //                std::cout << (*eit).first->GetName() << " " << (*eit).second << "\n";
-                //            }
-
-
-
-                if (!this->valid_configuration) {
-                    std::cout << "Configuration Error:  Invalid model configuration. See mas.log for errors.\n";
-                    mas_log << "Configuration Error:  Invalid model configuration. See mas.log for errors.\n";
-                    exit(0);
                 }
 
             }
 
-            std::unordered_map<int, std::shared_ptr<mas::Population<REAL_T> > >& GetPopulations() {
-                return populations;
+            //            this->nseasons = this->seasons.size();
+
+            mas_log << "Estimated Parameters\t\t\t\t\t\tPhase\n";
+            mas_log << "\nRecruitment:\n";
+            recruitment_model_iterator rit;
+            for (rit = this->recruitment_models.begin(); rit != this->recruitment_models.end(); ++rit) {
+                typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
+                for (it = (*rit).second->estimated_parameters_map.begin(); it != (*rit).second->estimated_parameters_map.end(); ++it) {
+                    mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
+                    this->Register(*(*it).first, (*it).second);
+                }
+
+            }
+            mas_log << "\nGrowth:\n";
+            growth_model_iterator git;
+            for (git = this->growth_models.begin(); git != this->growth_models.end(); ++git) {
+                typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
+                for (it = (*git).second->estimated_parameters_map.begin(); it != (*git).second->estimated_parameters_map.end(); ++it) {
+                    mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
+                    this->Register(*(*it).first, (*it).second);
+                }
+
+            }
+
+            mas_log << "\nSelectivity:\n";
+            selectivity_model_iterator sit;
+            for (sit = this->selectivity_models.begin(); sit != this->selectivity_models.end(); ++sit) {
+                typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
+                for (it = (*sit).second->estimated_parameters_map.begin(); it != (*sit).second->estimated_parameters_map.end(); ++it) {
+                    mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
+                    this->Register(*(*it).first, (*it).second);
+
+                }
+
+            }
+
+            mas_log << "\nMovement:\n";
+            movement_model_iterator mit;
+            for (mit = this->movement_models.begin(); mit != this->movement_models.end(); ++mit) {
+                typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
+                for (it = (*mit).second->estimated_parameters_map.begin(); it != (*mit).second->estimated_parameters_map.end(); ++it) {
+                    mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
+                    this->Register(*(*it).first, (*it).second);
+                }
+
+            }
+            mas_log << "\nNatural Mortality:\n";
+            natural_mortality_model_iterator mmit;
+            for (mmit = this->natural_mortality_models.begin(); mmit != this->natural_mortality_models.end(); ++mmit) {
+                if ((*mmit).second->mortality_vector.size() != this->ages.size()) {
+                    this->valid_configuration = false;
+                    std::cout << "Configuration Error: Natural mortality vector for model \"" << (*mmit).second->id << "\" not eqaul to " << ages.size() << "\n";
+                    mas_log << "Configuration Error: Natural mortality vector for model \"" << (*mmit).second->id << "\" not eqaul to " << ages.size() << "\n";
+
+                }
+                typename mas::ModelObject<REAL_T>::estimable_parameter_iterator it;
+                for (it = (*mmit).second->estimated_parameters_map.begin(); it != (*mmit).second->estimated_parameters_map.end(); ++it) {
+                    mas_log << (*it).first->GetName() << "\t\t\t\t\t\t" << (*it).second << "\n";
+                    this->Register(*(*it).first, (*it).second);
+                }
+
+                //            for (int a = 0; a <this->ages.size(); a++) {
+                //                (*mmit).second->male_mortality[this->ages[a]] = (*mmit).second->male_mortality_vector[a];
+                //                (*mmit).second->female_mortality[this->ages[a]] = (*mmit).second->female_mortality_vector[a];
+                //
+                //            }
+
             }
 
 
 
 
 
+            fleet_iterator fit;
+            for (fit = this->fleets.begin(); fit != this->fleets.end(); ++fit) {
+                typename Fleet<REAL_T>::season_area_id_iterator sit;
+                for (sit = (*fit).second->season_area_selectivity_ids.begin(); sit != (*fit).second->season_area_selectivity_ids.end(); ++sit) {
+                    typename Fleet<REAL_T>::area_id_iteraor ait;
+                    int season = (*sit).first;
+                    for (ait = (*sit).second.begin(); ait != (*sit).second.end(); ++ait) {
+                        int area = (*ait).first;
+                        int id = (*ait).second;
+                        (*fit).second->area_season_selectivity[area][season] = this->selectivity_models[id];
+                        (*fit).second->season_area_selectivity[season][area] = this->selectivity_models[id];
+                    }
+                }
+
+                for (sit = (*fit).second->season_area_fishing_mortality_ids.begin(); sit != (*fit).second->season_area_fishing_mortality_ids.end(); ++sit) {
+                    typename Fleet<REAL_T>::area_id_iteraor ait;
+                    int season = (*sit).first;
+                    for (ait = (*sit).second.begin(); ait != (*sit).second.end(); ++ait) {
+                        int area = (*ait).first;
+                        int id = (*ait).second;
+                        (*fit).second->area_season_fishing_mortality[area][season] = this->finshing_mortality_models[id];
+                        (*fit).second->season_area_fishing_mortality[season][area] = this->finshing_mortality_models[id];
+                        this->areas[area]->seasonal_fleet_operations[season].push_back((*fit).second);
+
+                    }
+                }
+
+            }
+            // exit(0);
+
+            //            for (fit = this->fleets.begin(); fit != this->fleets.end(); ++fit) {
+            //                typename Fleet<REAL_T>::season_area_selectivity_iterator sait;
+            //                for (sait = (*fit).second->season_area_selectivity.begin(); sait != (*fit).second->season_area_selectivity.end(); ++sait) {
+            //                    int season = (*sait).first;
+            //                    typename Fleet<REAL_T>::area_sectivity_iterator ait;
+            //                    for (ait = (*sait).second.begin(); ait != (*sait).second.begin(); ++ait) {
+            //                        int area = (*ait).first;
+            //                        this->areas[area]->seasonal_fleet_operations[season].push_back((*fit).second);
+            //                    }
+            //                }
+            //                
+            //                typename Fleet<REAL_T>::season_area_fishing_mortality_iterator sait;
+            //                for (sait = (*fit).second->season_area_selectivity.begin(); sait != (*fit).second->season_area_selectivity.end(); ++sait) {
+            //                    int season = (*sait).first;
+            //                    typename Fleet<REAL_T>::area_sectivity_iterator ait;
+            //                    for (ait = (*sait).second.begin(); ait != (*sait).second.begin(); ++ait) {
+            //                        int area = (*ait).first;
+            //                        this->areas[area]->seasonal_fleet_operations[season].push_back((*fit).second);
+            //                    }
+            //                }
+            //            }
 
 
-            private:
+            //            std::cout << "Estimated parameters:\n";
+            //            typename mas::ModelObject<REAL_T>::estimable_parameter_iterator eit;
+            //            for (eit = this->estimated_parameters_map.begin(); eit != this->estimated_parameters_map.end(); ++eit) {
+            //                std::cout << (*eit).first->GetName() << " " << (*eit).second << "\n";
+            //            }
 
-        };
 
 
-    }
+            if (!this->valid_configuration) {
+                std::cout << "Configuration Error:  Invalid model configuration. See mas.log for errors.\n";
+                mas_log << "Configuration Error:  Invalid model configuration. See mas.log for errors.\n";
+                exit(0);
+            }
+
+        }
+
+        std::unordered_map<int, std::shared_ptr<mas::Population<REAL_T> > >& GetPopulations() {
+            return populations;
+        }
+
+
+
+
+
+
+
+    private:
+
+    };
+
+
+}
 
 
 #endif /* MAS_INFORMATION_HPP */
