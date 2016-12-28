@@ -483,6 +483,43 @@ namespace mas {
             //                model->season = (*rit).value.GetInt();
             //            }
 
+
+            rit = (*movement_model).value.FindMember("recruits");
+            if ((*rit).value.IsArray()) {
+                model->recruit_connectivity.resize((*rit).value.Size());
+                for (int i = 0; i < (*rit).value.Size(); i++) {//season
+                    rapidjson::Value& m = (*rit).value[i];
+                    if (m.IsArray()) {
+
+                        model->recruit_connectivity[i].resize(m.Size());
+                        for (int j = 0; j < m.Size(); j++) {//area
+                            rapidjson::Value& n = m[j];
+                            if (n.IsArray()) {
+                                model->recruit_connectivity[i][j].resize(n.Size());
+
+                                for (int k = 0; k < n.Size(); k++) {//area
+                                    mas::VariableTrait<REAL_T>::SetValue(model->recruit_connectivity[i][j][k], static_cast<REAL_T> (n[k].GetDouble()));
+                                }
+                            }
+                        }
+
+                    } else {
+                        std::cout << "Configuration Error: Movement connectivity rows must be a vector\n";
+                        mas::mas_log << "Configuration Error: Movement connectivity rows must be a vector\n";
+                        this->valid_configuration = false;
+
+                    }
+                }
+
+
+            } else {
+                std::cout << "Configuration Error: Movement connectivity must be a matrix\n";
+                mas::mas_log << "Configuration Error: Movement connectivity must be a matrix\n";
+                this->valid_configuration = false;
+
+            }
+
+
             rit = (*movement_model).value.FindMember("male");
             if ((*rit).value.IsArray()) {
                 model->male_connectivity.resize((*rit).value.Size());
@@ -773,6 +810,79 @@ namespace mas {
                 this->valid_configuration = false;
 
             }
+
+
+
+            rit = (*population_model).value.FindMember("maturity");
+            if (rit != (*population_model).value.MemberEnd()) {
+                //                model->movement_model_id = (*rit).value.GetInt();
+
+                if ((*rit).value.IsArray()) {
+
+                    for (int i = 0; i < (*rit).value.Size(); i++) {
+                        rapidjson::Value& v = (*rit).value[i];
+                        int sex = 0;
+                        int area = -9999;
+                        std::vector<REAL_T> values;
+                        rapidjson::Document::MemberIterator mit = v.FindMember("sex");
+                        if (std::string((*mit).value.GetString()) == std::string("female")) {
+                            sex = 1;
+                        }
+
+                        mit = v.FindMember("area");
+
+                        if (mit == v.MemberEnd()) {
+                            std::cout << "Configuration Error: Population maturity models must define a area.\n";
+                            mas::mas_log << "Configuration Error: Population maturity models must define a area.\n";
+                            this->valid_configuration = false;
+                        } else {
+                            area = (*mit).value.GetInt();
+                        }
+
+                        mit = v.FindMember("values");
+                        if (mit == v.MemberEnd()) {
+                            std::cout << "Configuration Error: Population maturity models must define a value vector.\n";
+                            mas::mas_log << "Configuration Error: Population maturity models must define a value vector.\n";
+                            this->valid_configuration = false;
+                        } else {
+
+                            if ((*mit).value.IsArray()) {
+
+                                for (int j = 0; j < (*mit).value.Size(); j++) {
+                                    rapidjson::Value& vv = (*mit).value[j];
+                                    values.push_back(static_cast<REAL_T> (vv.GetDouble()));
+                                }
+
+
+                            } else {
+                                std::cout << "Configuration Error: Population maturity models must define a value vector.\n";
+                                mas::mas_log << "Configuration Error: Population maturity models must define a value vector.\n";
+                            }
+
+
+
+                        }
+
+
+                        model->maturity_models[area][sex] = values;
+
+
+                    }
+
+
+                } else {
+                    std::cout << "Configuration Error: Population maturity models must be defined in a vector.\n";
+                    mas::mas_log << "Configuration Error: Population maturity models must be defined in a vector.\n";
+                    this->valid_configuration = false;
+                }
+
+            } else {
+                std::cout << "Configuration Error: Population is required to have maturity model defined\n";
+                mas::mas_log << "Configuration Error: Population is required to have maturity model defined\n";
+                this->valid_configuration = false;
+
+            }
+
 
 
             rit = (*population_model).value.FindMember("movement");
@@ -4581,6 +4691,12 @@ namespace mas {
                     male_pop_info.natal_population = population;
                     male_pop_info.area = (*ait).second;
 
+                    male_pop_info.maturity_vector = population->maturity_models[male_pop_info.area->id][0];
+                    if (male_pop_info.maturity_vector.size() == 0 || male_pop_info.maturity_vector.size() < this->ages.size()) {
+                        std::cout << "Configuration Error: Maturity vector for population " << population->id << " has wrong size.\n";
+                        std::cout << "Configuration Error: Maturity vector for population " << population->id << " has wrong size.\n";
+                        this->valid_configuration = false;
+                    }
                     growth_model_iterator git = this->growth_models.find(population->growth_id);
                     if (git != this->growth_models.end()) {
                         male_pop_info.growth_model = this->growth_models[population->growth_id];
@@ -4609,7 +4725,11 @@ namespace mas {
                         for (int s = 0; s< this->nseasons; s++) {
                             typename std::map<int, int>::iterator sit = seasonal_recruitment.find((s + 1));
                             if (sit != seasonal_recruitment.end()) {
-                                male_pop_info.recruitment_model[(*sit).first + 1] = this->recruitment_models[(*sit).second];
+                                male_pop_info.recruitment_model[(*sit).first] = this->recruitment_models[(*sit).second];
+                            }else {
+                                std::cout << "Recruitment model not defined for " << population->id << " season " << (s + 1) << ", area " << male_pop_info.area->id << "\n";
+                                mas_log << "Recruitment model not defined for " << population->id << " season " << (s + 1) << ", area " << male_pop_info.area->id << "\n";
+                                this->valid_configuration = false;
                             }
 
                         }
@@ -4632,7 +4752,12 @@ namespace mas {
                     female_pop_info.natal_area = population->natal_area;
                     female_pop_info.natal_population = population;
                     female_pop_info.area = (*ait).second;
-
+                    female_pop_info.maturity_vector = population->maturity_models[female_pop_info.area->id][1];
+                    if (female_pop_info.maturity_vector.size() == 0 || female_pop_info.maturity_vector.size() < this->ages.size()) {
+                        std::cout << "Configuration Error: Maturity vector for population " << population->id << " has wrong size.\n";
+                        std::cout << "Configuration Error: Maturity vector for population " << population->id << " has wrong size.\n";
+                        this->valid_configuration = false;
+                    }
                     if (git != this->growth_models.end()) {
                         female_pop_info.growth_model = this->growth_models[population->growth_id];
                     } else {
@@ -4661,7 +4786,11 @@ namespace mas {
                         for (int s = 0; s< this->nseasons; s++) {
                             typename std::map<int, int>::iterator sit = seasonal_recruitment.find((s + 1));
                             if (sit != seasonal_recruitment.end()) {
-                                female_pop_info.recruitment_model[(*sit).first + 1] = this->recruitment_models[(*sit).second];
+                                female_pop_info.recruitment_model[(*sit).first ] = this->recruitment_models[(*sit).second];
+                            } else {
+                                std::cout << "Recruitment model not defined for " << population->id << " season " << (s + 1) << ", area " << female_pop_info.area->id << "\n";
+                                mas_log << "Recruitment model not defined for " << population->id << " season " << (s + 1) << ", area " << female_pop_info.area->id << "\n";
+                                this->valid_configuration = false;
                             }
 
                         }
