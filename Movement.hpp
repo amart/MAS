@@ -43,18 +43,43 @@ namespace mas {
      * Probability information is defined by season and areas.
      */
     template<typename REAL_T>
-    struct Movement : mas::ModelObject<REAL_T> {
+    struct MovementBase : mas::ModelObject<REAL_T> {
         typedef typename VariableTrait<REAL_T>::variable variable;
-        std::vector<std::vector<std::vector<variable> > >  recruit_connectivity;
         std::vector<std::vector<std::vector<variable> > >  male_connectivity; 
         std::vector<std::vector<std::vector<variable> > >  female_connectivity; 
+
+        virtual const variable Evaluate(const int& from_area_id, const int& to_area_id, const int& sex, const variable& age) = 0;
+
+        virtual const std::string Name() {
+            return "MovementBase";
+        }
+
+    };
+
+    template<typename REAL_T>
+    struct BoxTransfer : MovementBase<REAL_T> {
+        typedef typename VariableTrait<REAL_T>::variable variable;
+
+        /**
+         * Age based movement
+         *
+         * @param from_area_id
+         * @param to_area_id
+         * @param sex
+         * @param age
+         * @return fraction_to_move
+         */
+        virtual const variable Evaluate(const int& from_area_id, const int& to_area_id, const int& sex, const variable& age) {
+            // Q:  how to access the population-specific movement array in here?
+            // FIX!!!!!
+            return static_cast<REAL_T> (1.0);
+        }
 
         virtual const std::string Name() {
             return "Box Transfer";
         }
 
     };
-
 
 }
 

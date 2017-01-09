@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-/* 
+/*
  * File:   Population.hpp
  * Author: matthewsupernaw
  *
@@ -22,12 +22,11 @@
 #include <unordered_map>
 #include "Area.hpp"
 
-#include "../AutoDiff_Standalone/AutoDiff/AutoDiff.hpp"
+#include "../ATL/AutoDiff/AutoDiff.hpp"
 #include "Movement.hpp"
 #include "Recruitment.hpp"
 
 namespace mas {
-
 
 
     template<class REAL_T>
@@ -37,234 +36,164 @@ namespace mas {
      *Runtime calculated information for a population in a specific area.
      */
     template<class REAL_T>
-    struct PopulationInfo {
-        /*These need to be defined elsewhere*/
-        REAL_T spawning_season_offset = .25;
-        REAL_T catch_fraction_of_year = .5;
-        REAL_T survey_fraction_of_year = .5;
-        REAL_T catch_biomass_units = 1000.0;
-        REAL_T survey_biomass_units = 1000000.0;
-        REAL_T A = 0.000025;
-        REAL_T B = 3.0;
-        /*==================================*/
-        bool male_chohorts = true;
+    struct AreaPopulation {
+        bool male_cohorts = true;
         typedef typename mas::VariableTrait<REAL_T>::variable variable;
         Population<REAL_T>* natal_population;
 
         bool natal_homing = false;
-        std::shared_ptr<Area<REAL_T> > area;
+        std::shared_ptr<Area<REAL_T> > area;    // Q:  what is the definition of area?
         std::shared_ptr<Area<REAL_T> > natal_area;
+
+        std::map<int, std::shared_ptr<mas::Fleet<REAL_T> > > fleet_object; // area-season specific
+        typedef typename std::map<int, std::shared_ptr<mas::Fleet<REAL_T> > >::iterator fleet_iterator;
+
         std::shared_ptr<GrowthBase<REAL_T> > growth_model;
-        std::shared_ptr<mas::NaturalMortality<REAL_T> > natural_mortality_model; //area specific   
-        std::map<int, std::shared_ptr<mas::RecruitmentBase<REAL_T> > > recruitment_model; //season area specific  
+        std::shared_ptr<MovementBase<REAL_T> > movement_model;
+        std::shared_ptr<mas::NaturalMortality<REAL_T> > natural_mortality_model; //area specific
+        std::map<int, std::shared_ptr<mas::RecruitmentBase<REAL_T> > > recruitment_model; // area-season specific
         typedef typename std::map<int, std::shared_ptr<mas::RecruitmentBase<REAL_T> > >::iterator recruitment_model_iterator;
-        //
+
+        // Q:  what is the definition of fecundity?  use new MaturityBase here instead?
+        std::map<int, std::shared_ptr<mas::FecundityBase<REAL_T> > > maturity_model; // area-season specific
+
+        // NOTE:  all population dynamics calculations done for both males and females
+        // NOTE:  male_cohort will indicate whether user wants results by sex or aggregated (I guess)
+        int sexes = 2;
+
         int years;
         int seasons;
         std::vector<REAL_T> ages;
+        std::vector<REAL_T> season_duration;        // fraction of year duration for each season
+        std::vector<REAL_T> peak_spawning_event;    // fraction of year duration from the beginning of each season
 
-
-        std::vector<REAL_T> maturity_vector;
-        std::vector<variable> length_at_season_start;
-        std::vector<variable> length_at_spawning;
-        std::vector<variable> length_at_catch_time;
-        std::vector<variable> length_at_survey_time;
-
-        std::vector<variable> weight_at_season_start;
-        std::vector<variable> weight_at_spawning;
-        std::vector<variable> weight_at_catch_time;
-        std::vector<variable> weight_at_survey_time;
-        std::vector<variable> equilibrium_to_survival_at_spawning;
-        std::vector<variable> spawning_biomass_at_age;
-        std::vector<variable> spawning_biomass;
-
-        std::vector<variable> imigrants;
-        std::vector<variable> redistributed_recruits;
-        std::vector<variable> emigrants;
+        // Q:  are both of these needed?  immigrants from area 1 to area 2 == emigrants from area 1 to area 2
         std::vector<variable> growth;
         std::vector<variable> recruitment;
         std::vector<variable> abundance;
-
-        std::vector<variable> M;
+        std::vector<variable> spawning_biomass;
         std::vector<variable> initial_numbers;
-        std::vector<variable> F;
-        std::vector<variable> Z;
-        std::vector<variable> S;
-        std::vector<variable> N;
-        std::vector<variable> C;
-        std::vector<variable> predicted_N;
-        //        std::vector<variable> S;
+
+        std::vector<variable> M;    // natural mortality-at-age, by area, year, season, sex, age (could omit year for now...)
+        std::vector<variable> F;    // total fishing mortality-at-age, by fleet, area, year, season, sex, age
+        std::vector<variable> Z;    // total mortality-at-age, by area, year, season, sex, age
+        std::vector<variable> S;    // dunno
+        std::vector<variable> N;    // numbers-at-age, by area, year, season, sex, age
+        std::vector<variable> SN;   // spawning numbers-at-age by area, year, season, sex, age (could omit males in the future...)
+        std::vector<variable> FN;   // fishery numbers-at-age, by fleet, area, year, season, sex, age
+        std::vector<variable> fishery_biomass;  // fishery catch mass, by fleet, area, year, season
+        std::vector<variable> IN;   // index numbers-at-age, by fleet, area, year, season, sex, age
+        std::vector<variable> index_biomass;    // index catch mass, by fleet, area, year, season
+        std::vector<variable> spawning_biomass; // male and female spawning mass, by area, year, season, sex
 
         void Initialize() {
 
-            length_at_season_start.resize(this->ages.size() + 1);
-            length_at_spawning.resize(this->ages.size());
-            length_at_catch_time.resize(this->ages.size());
-            length_at_survey_time.resize(this->ages.size());
+            season_duration.resize(seasons);
+            peak_spawning_event.resize(seasons);
 
-            weight_at_season_start.resize(this->ages.size() + 1);
-            weight_at_spawning.resize(this->ages.size());
-            weight_at_catch_time.resize(this->ages.size());
-            weight_at_survey_time.resize(this->ages.size());
-            equilibrium_to_survival_at_spawning.resize(this->ages.size());
-            spawning_biomass_at_age.resize(this->ages.size());
-            spawning_biomass.resize(years * seasons);
-
-            recruitment.resize(years * seasons);
-            redistributed_recruits.resize(years * seasons);
+            recruitment.resize(years * seasons * sexes);     // age-0
+            // Q:  what is the definition of abundance?
             abundance.resize(years * seasons);
-            initial_numbers.resize(years * seasons);
-            F.resize(years * seasons * ages.size());
-            S.resize(years * seasons * ages.size());
-            emigrants.resize((years) * seasons * ages.size());
-            imigrants.resize((years) * seasons * ages.size());
-            growth.resize(years * seasons * ages.size());
-            Z.resize(years * seasons * ages.size());
-            S.resize(years * seasons * ages.size());
-            N.resize(years * seasons * ages.size());
-            predicted_N.resize(years * seasons * ages.size());
+            initial_numbers.resize(seasons * sexes * ages.size());
 
-        }
+            // Q:  what is the definition of growth?  need the age-length array and/or length-at-age array
+            growth.resize(years * seasons * sexes * ages.size());
 
-        inline void IncrementTime(int& y, int& s) {
-            if (s == this->seasons) {
-                y += 1;
-                s = 1;
-            } else {
-                s++;
-            }
-        }
+            M.resize(years * seasons * sexes * ages.size());
+            Z.resize(years * seasons * sexes * ages.size());
+            N.resize(years * seasons * sexes * ages.size());
+            SN.resize(years * seasons * sexes * ages.size());
 
-        inline void DecrementTime(int& y, int& s) {
-            if (s == 1) {
-                y -= 1;
-                s = seasons;
-            } else {
-                s--;
-            }
+            F.resize(fleets.size() * years * seasons * sexes * ages.size());
+            FN.resize(fleets.size() * years * seasons * sexes * ages.size());
+            fishery_biomass(fleets.size() * years * seasons);
+            IN.resize(fleets.size() * years * seasons * sexes * ages.size());
+            index_biomass(fleets.size() * years * seasons);
+
+            spawning_biomass(years * seasons);
+
+            // Q:  what is S?  MRS said survival - definition?
+            // S.resize(areas.size() * years * seasons * sexes * ages.size());
         }
 
         /**
-         * Evaluates spawn and recruitment for all ages in a year and season.
-         * 
+         * Evaluates recruitment (age 0) in all areas
+         *
          * @param year
          * @param season
          */
         inline void Recruitment(int year, int season) {
-            int y = year;
-            int s = season;
-
             //#warning add compiler hint here
-            if (year == 0 && season == 1) {
-//                for (int a = 0; a< this->ages.size(); a++) {
-                    this->recruitment[0] = this->initial_numbers[0];
-//                }
-            } else {
-                this->DecrementTime(y, s);
-                variable a;
-                for (int i = 0; i < this->ages.size(); i++) {
-                    a += this->N[y * this->seasons * this->ages.size() + (s - 1) * this->ages.size() + i] * this->spawning_biomass[i];
+            if (years == 0) {   // ?????
+                for (int x = 0; x < this->sexes; ++x) {
+                    recruitment[area.id][year][season][x] = this->N[area.id][year][season][x][0];
                 }
-                recruitment_model_iterator rit = this->recruitment_model.find(season);
+            } else {
+                recruitment_model_iterator rit = this->recruitment_model.find(area.id, season);
+
                 if (rit != this->recruitment_model.end()) {
-                    this->recruitment[year * seasons + (season - 1)] =
-                            (*rit).second->Evaluate(a);
-                } else {
-                    std::cout << "recruitment model not found!!!\n";
-                    exit(0);
+//                      std::cout << this->growth_model->Evaluate(this->ages[0]) << " ";
+                    // calculate recruits, then
+                    // split between males and females
+                    // into this->N[area.id][year][season][x][0]
                 }
             }
-//            this->N[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size()] = this->recruitment[year * seasons + (season - 1)];
-            std::cout << "Recruitment :" << year << "-" << season << " = " << this->recruitment[year * seasons + (season - 1)] << "\n";
         }
 
         /**
-         * Evaluates growth for all ages in a year and season.
-         * 
+         * Evaluates growth in all areas
+         *
          * @param year
          * @param season
          */
         inline void Growth(int year, int season) {
-            //            growth[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size()] = variable(.01);
-            //            for (int a = 1; a< this->ages.size(); a++) {
-            //                growth[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size() + a] =
-            //                        this->area->growth_model->Evaluate(this->ages[a]);
-            //            }
-            length_at_season_start[0] = variable(.01);
-            weight_at_season_start[0] = this->A * atl::exp(this->B * atl::log(length_at_season_start[0]));
+            // Q:  what is the definition of growth?
+            // NOTE:  need age-length transition array and/or length-at-age array
+            growth[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size()] = variable(.01);
             for (int a = 1; a< this->ages.size(); a++) {
-                length_at_season_start[a] =
+                growth[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size() + a] =
                         this->area->growth_model->Evaluate(this->ages[a]);
-
-                weight_at_season_start[a] = this->A * atl::exp(this->B * atl::log(length_at_season_start[a]));
-
-                length_at_spawning[a - 1] = (static_cast<REAL_T> (1.0) - this->spawning_season_offset) *
-                        length_at_season_start[a - 1] + this->spawning_season_offset * length_at_season_start[a];
-
-                length_at_catch_time[a - 1] = (static_cast<REAL_T> (1.0) - this->catch_fraction_of_year) *
-                        length_at_season_start[a - 1] + this->catch_fraction_of_year * length_at_season_start[a];
-
-                length_at_survey_time[a - 1] = (static_cast<REAL_T> (1.0) - this->survey_fraction_of_year) *
-                        length_at_season_start[a - 1] + this->survey_fraction_of_year * length_at_season_start[a];
-
-
-                weight_at_spawning[a - 1] = this->A * atl::exp(this->B * atl::log(length_at_spawning[a - 1]));
-                weight_at_catch_time[a - 1] = this->A * atl::exp(this->B * atl::log(length_at_catch_time[a - 1]));
-                weight_at_survey_time[a - 1] = this->A * atl::exp(this->B * atl::log(length_at_survey_time[a - 1]));
             }
-
-            int index = ages.size() - 1;
-            length_at_season_start[ages.size()] =
-                    this->area->growth_model->Evaluate(this->ages[ages.size() - 1] + static_cast<REAL_T> (1.0));
-            weight_at_season_start[ages.size()] = this->A * atl::exp(this->B * atl::log(length_at_season_start[ages.size()]));
-
-            length_at_spawning[index] = (static_cast<REAL_T> (1.0) - this->spawning_season_offset) *
-                    length_at_season_start[index] + this->spawning_season_offset * length_at_season_start[ages.size()];
-
-            length_at_catch_time[index] = (static_cast<REAL_T> (1.0) - this->catch_fraction_of_year) *
-                    length_at_season_start[index] + this->catch_fraction_of_year * length_at_season_start[ages.size()];
-
-            length_at_survey_time[index] = (static_cast<REAL_T> (1.0) - this->survey_fraction_of_year) *
-                    length_at_season_start[index] + this->survey_fraction_of_year * length_at_season_start[ages.size()];
-
-
-            weight_at_spawning[index] = this->A * atl::exp(this->B * atl::log(length_at_spawning[index]));
-            weight_at_catch_time[index] = this->A * atl::exp(this->B * atl::log(length_at_catch_time[index]));
-            weight_at_survey_time[index] = this->A * atl::exp(this->B * atl::log(length_at_survey_time[index]));
-
-
-
         }
 
         /**
-         * Evaluates mortality for all ages in a year and season.
+         * Evaluates total mortality in all areas
+         *
          * @param year
          * @param season
          */
         inline void Mortality(int year, int season) {
-            std::vector< std::shared_ptr<Fleet<REAL_T> > >& fleets = this->area->seasonal_fleet_operations[season];
 
-            for (int a = 0; a< this->ages.size(); a++) {
+            for (int x = 0; x < this->sexes; ++x) {
+                for (int a = 0; a< this->ages.size(); a++) {
 
+                    variable f_a = static_cast<REAL_T> (0.0);
 
-                variable f_a = static_cast<REAL_T> (0.0);
-                for (int f = 0; f < fleets.size(); f++) {
-                    f_a += fleets[f]->area_season_fishing_mortality[this->area->id][season]->Evaluate(year, (season - 1)) *
-                            fleets[f]->season_area_selectivity[season][this->area->id]->Evaluate(ages[a]);
+                    std::vector< std::shared_ptr<Fleet<REAL_T> > >& fleets = this->area->seasonal_fishing_operations[area.id, year, season];
+
+                    if (nullptr != fleets) {
+                        for (int f = 0; f < fleets.size(); f++) {
+                            F[fleets[f]->id][area.id][year][season][x][a] =
+                                fleets[f]->area_season_fishing_mortality[area.id][season]->Evaluate(year, (season - 1)) *
+                                    fleets[f]->season_area_selectivity[area.id][season]->Evaluate(x, ages[a]);
+                            f_a += F[fleets[f]->id][area.id][year][season][x][a];
+                        }
+                    }
+
+                    // NOTE:  need Z by area, year, season, sex, and age - multiply by season duration when using
+                    Z[area.id][year][season][x][a] = this->natural_mortality_model->Evaluate(x, a) + f_a;
                 }
-
-                Z[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size() + a]
-                        = this->natural_mortality_model->Evaluate(a) + f_a;
             }
         }
 
         /**
-         * Evaluates fecundity for all ages in a year and season.
-         * 
+         * Evaluates fecundity in all areas
+         *
          * @param year
          * @param season
          */
         inline void Fecundity(int year, int season) {
+            // Q:  what is the definition of fecundity?
             if (natal_homing) {
                 //use natal area parameters
             } else {
@@ -273,104 +202,281 @@ namespace mas {
         }
 
         /**
-         * Evaluates numbers at age for all ages in a year and season.
-         * 
+         * calculates length-at-age by sex
+         *
+         * @param season
+         * @param sex
+         * @param age
+         * @param additional_year_fraction
+         * @returns length
+         */
+        inline REAL_T getLength(int season, int sex, REAL_T age, REAL_T additional_year_fraction)
+        {
+            REAL_T year_fraction = additional_year_fraction;
+
+            if (season > 1)
+            {
+                for (int s = 1; s < season; ++s)
+                {
+                    year_fraction += season_duration[season - 1];
+                }
+            }
+
+            return this->growth_model->getLength->Evaluate(sex, age + year_fraction);
+        }
+
+        /**
+         * calculates weight-at-length by sex
+         *
+         * @param sex
+         * @param length
+         * @return weight
+         */
+        inline REAL_T getWeight(int sex, REAL_T length)
+        {
+            if (length < static_cast<REAL_T>(0.00001))
+            {
+                return static_cast<REAL_T>(0.0001);
+            }
+
+            return this->growth_model->getWeight->Evaluate(sex, length);
+        }
+
+        /**
+         * Evaluates spawning biomass in all areas
+         *
+         * @param year
+         * @param season
+         */
+        inline void SpawningBiomass(int year, int season) {
+            if (natal_homing) {
+                //use natal area parameters
+                for (int area_id = 0; area_id < areas.size(); ++area_id)
+                {
+                    variable peak_spawning_event = this->peak_spawning_event[area.id][season];
+
+                    for (int x = 0; x < this->sexes; ++x)
+                    {
+                        spawning_biomass[area.id][year][season][x] = static_cast<REAL_T> (0.0);
+
+                        for (int a = 0; a < ages.size(); ++a)
+                        {
+                            // numbers at the time of peak spawning
+                            SN[area.id][year][season][x][a] = this->N[area.id][year][season][x][a] * this->maturity_model[season]->Evaluate(x, a) *
+                                atl::exp(static_cast<REAL_T>(-1.0) * peak_spawning_event * Z[area.id][year][season][x][a]);
+
+                            spawning_biomass[area.id][year][season][x] +=
+                                (SN[area.id][year][season][x][a] * getWeight(getLength(season, x, a, peak_spawning_event)));
+                        }
+                    }
+                }
+            } else {
+                // use  area parameters
+            }
+        }
+
+        /**
+         * Evaluates numbers at age in all areas
+         *
          * @param year
          * @param season
          */
         inline void NumbersAtAge(int year, int season) {
 
+            for (int area_id; area_id < areas.size(); ++area_id) {
+                if (year == 0 && season == 1) { // ?????
+                    for (int x = 0; x < this->sexes; ++x) {
+                        for (int a = 0; a < ages.size(); a++) {
+                            this->N[area.id][year][season][x][a] = this->initial_numbers[area.id][season][x][a];
+                        }
 
-            if (year == 0 && season == 1) {
-                for (int a = 0; a < ages.size(); a++) {
-                    this->N[a] = this->initial_numbers[a];
+                        // NOTE:  the above loop should be changed to this loop - to calculate equilibrium unfished numbers-at-age
+                        // this->initial_numbers[area.id][season][x][0] = atl::exp(log_median_recruit);
+                        // for (int a = 1; a < ages.size(); a++) {
+                        //     this->initial_numbers[area.id][season][x][a] = this->initial_numbers[area.id][season][x][a-1] *
+                        //         atl::exp(static_cast<REAL_T>(-1.0) * this->natural_mortality_model->Evaluate(x, (a-1)));
+                        // }
+                        // plus group
+                        // int a = ages.size() - 1;
+                        // this->initial_numbers[area.id][season][x][a] /=
+                        //     (static_cast<REAL_T> (1.0) - atl::exp(static_cast<REAL_T>(-1.0) * this->natural_mortality_model->Evaluate(x, (a-1))));
+                    }
+                } else {
+                    int y = year;
+                    int s = season;
+                    bool same_year = true;
+                    if (season == 1) {
+                        s = this->seasons;
+                        y--;
+                        same_year = false;
+                    }
+                    else
+                    {
+                        s--;
+                    }
+
+                    //calc new numbers at the beginning of the season
+
+                    for (int x = 0; x < this->sexes; ++x) {
+
+                        // NOTE:  need to apply annual rec devs in first season
+                        // how to access rec dev parameters?
+                        if (season == 1)
+                        {
+                            // this->N[area.id][year][season][x][0] *= atl::exp(rec_dev[year]);
+                        }
+
+                        for (int a = 1; a < ages.size(); a++) {
+                            int prev_age = same_year ? a : (a-1);
+                            this->N[area.id][year][season][x][a] = this->N[area.id][y][s][x][prev_age] *
+                                atl::exp(static_cast<REAL_T> (-1.0) * this->season_duration[s-1] * this->Z[area.id][y][s][x][prev_age]);
+                        }
+                        // plus group
+                        int plus_age = (ages.size() - 1);
+                        this->N[area.id][year][season][x][plus_age] += (this->N[area.id][y][s][x][plus_age] *
+                            atl::exp(static_cast<REAL_T> (-1.0) * this->season_duration[s-1] * this->Z[area.id][y][s][x][plus_age]));
+                    }
+                }
+            }
+
+            // calculate emigrants at the beginning of the season
+            for (int from_area_id; from_area_id < areas.size(); ++from_area_id)
+            {
+                for (int x = 0; x < this->sexes; ++x)
+                {
+                    for (int a = 0; a < ages.size(); ++a)
+                    {
+                        for (int to_area_id = 0; to_area_id < areas.size(); ++to_area_id)
+                        {
+                            if (to_area_id != from_area_id)
+                            {
+                                this->emigrants[from_area_id][to_area_id][year][season][x][a] =
+                                    (this->N[from_area_id][year][season][x][a] *
+                                     this->movement_model->Evaluate(from_area_id, to_area_id, x, a));
+                            }
+                        }
+                    }
+                }
+            }
+
+            //move fish
+            for (int from_area_id; from_area_id < areas.size(); ++from_area_id)
+            {
+                for (int x = 0; x < this->sexes; ++x)
+                {
+                    for (int a = 0; a < ages.size(); ++a)
+                    {
+                        for (int to_area_id = 0; to_area_id < areas.size(); ++to_area_id)
+                        {
+                            if (to_area_id != from_area_id)
+                            {
+                                this->N[from_area_id][year][season][x][a] +=
+                                    // arrivals
+                                    (this->emigrants[to_area_id][from_area_id][year][season][x][a] -
+                                    // departures
+                                     this->emigrants[from_area_id][to_area_id][year][season][x][a]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // calculate spawning biomass
+            this->SpawningBiomass(year, season);
+
+            // calculate recruits for next season or first season of next year
+            int s = season + 1;
+            int y = year;
+            if (season == this->seasons)
+            {
+                s = 1;
+                y++;
+            }
+            this->Recruitment(y, s);
+        }
+
+        /**
+         * Evaluates catch biomass in all areas
+         *
+         * @param year
+         * @param season
+         */
+        inline void CatchBiomass(int year, int season) {
+
+            if (natal_homing) {
+                //use natal area parameters
+                for (int area_id = 0; area_id < areas.size(); ++area_id)
+                {
+                    std::vector< std::shared_ptr<Fleet<REAL_T> > >& fleets = this->area->seasonal_fishing_operations[area_id, year, season];
+
+                    if (nullptr != fleets)
+                    {
+                        for (int f = 0; f < fleets.size(); ++f)
+                        {
+                            fishery_biomass[fleets[f]->id][area_id][year][season] = static_cast<REAL_T> (0.0);
+
+                            for (int x = 0; x < this->sexes; ++x)
+                            {
+                                for (int a = 0; a < ages.size(); ++a)
+                                {
+                                    // this calculation assumes constant fishing throughout the season
+                                    variable tot_fmort = F[fleets[f]->id][area_id][year][season][x][a];
+                                    variable tot_mort  = this->natural_mortality_model->Evaluate(x, a) + tot_fmort;
+                                    FN[fleets[f]->id][area_id][year][season][x][a] = this->N[area_id][year][season][x][a] * (tot_fmort / tot_mort) *
+                                        (static_cast<REAL_T>(1.0) - atl::exp(static_cast<REAL_T>(-1.0) * this->season_duration[season] * tot_mort));
+
+                                    fishery_biomass[fleets[f]->id][area_id][year][season] +=
+                                        (FN[fleets[f]->id][year][season][x][a] * getWeight(getLength(season, x, a, fleets[f]->peak_fleet_event[area_id][season])));
+                                }
+                            }
+                        }
+                    }
                 }
             } else {
-                int y = year;
-                int s = season;
-                this->DecrementTime(y, s);
+                // use  area parameters
+            }
+        }
 
-                this->N[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size()] = this->redistributed_recruits[year * seasons + (season - 1)];
-                for (int a = 1; a < ages.size(); a++) {
-                    this->N[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size() + a] =
-                            this->N[y * this->seasons * this->ages.size() + (s - 1) * this->ages.size() + a - 1] *
-                            std::exp(static_cast<REAL_T> (-1.0) * Z[y * this->seasons * this->ages.size() + (s - 1) * this->ages.size() + a]) -
-                            this->emigrants[y * this->seasons * this->ages.size() + (s - 1) * this->ages.size() + a - 1] +
-                            this->imigrants[y * this->seasons * this->ages.size() + (s - 1) * this->ages.size() + a - 1];
+        /**
+         * Evaluates index biomass in all areas
+         *
+         * @param year
+         * @param season
+         */
+        inline void SurveyBiomass(int year, int season) {
+
+            if (natal_homing) {
+                //use natal area parameters
+                for (int area_id = 0; area_id < areas.size(); ++area_id)
+                {
+                    std::vector< std::shared_ptr<Fleet<REAL_T> > >& fleets = this->area->seasonal_index_operations[area_id, year, season];
+
+                    if (nullptr != fleets)
+                    {
+                        for (int f = 0; f < fleets.size(); ++f)
+                        {
+                            index_biomass[fleets[f]->id][area][year][season] = static_cast<REAL_T> (0.0);
+                            variable peak_index_event = fleets[f]->peak_fleet_event[area_id][season];
+
+                            for (int x = 0; x < this->sexes; ++x)
+                            {
+                                for (int a = 0; a < ages.size(); ++a)
+                                {
+                                    // numbers at the time of peak index
+                                    IN[fleets[f]->id][area_id][year][season][x][a] = this->N[area_id][year][season][x][a] *
+                                        fleets[f]->season_area_selectivity[area_id][season]->Evaluate(x, ages[a]) *
+                                        atl::exp(static_cast<REAL_T>(-1.0) * peak_index_event * Z[area_id][year][season][x][a]);
+
+                                    index_biomass[fleets[f]->id][area_id][year][season] +=
+                                        (IN[fleets[f]->id][year][season][x][a] * getWeight(getLength(season, x, a, peak_index_event)));
+                                }
+                            }
+                        }
+                    }
                 }
-
-                //move fish
-                //calc new numbers
-            }
-
-
-
-        }
-
-        /**
-         * Evaluates catch at age for all ages and season
-         * @param year
-         * @param season
-         */
-        inline void CatchAtAge(int year, int season) {
-            if (natal_homing) {
-                //use natal area parameters
-
             } else {
                 // use  area parameters
             }
-        }
-
-        /**
-         * Evaluates survey numbers at age for all ages and season
-         * @param year
-         * @param season
-         */
-        inline void SurveyNumbersAtAge(int year, int season) {
-            if (natal_homing) {
-                //use natal area parameters
-
-            } else {
-                // use  area parameters
-            }
-        }
-
-        /**
-         * Evaluates catch biomass at age for all ages and season
-         * @param year
-         * @param season
-         */
-        inline void CatchBiomassAtAge(int year, int season) {
-            if (natal_homing) {
-                //use natal area parameters
-
-            } else {
-                // use  area parameters
-            }
-        }
-
-        /**
-         * Evaluates catch biomass at age for all ages and season
-         * @param year
-         * @param season
-         */
-        inline void SurveyBiomassAtAge(int year, int season) {
-
-        }
-
-        inline void SpawningBiomass(int year, int season) {
-            variable sb = static_cast<REAL_T> (0.0);
-            for (int a = 1; a < ages.size(); a++) {
-                this->equilibrium_to_survival_at_spawning[a] =
-                        std::exp(-1.0 * this->spawning_season_offset * Z[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size() + a]);
-
-                this->spawning_biomass_at_age[a] = this->equilibrium_to_survival_at_spawning[a] *
-                        this->weight_at_spawning[a] *
-                        this->maturity_vector[a];
-                sb += this->spawning_biomass_at_age[a] * this->N[year * this->seasons * this->ages.size() + (season - 1) * this->ages.size() + a];
-
-            }
-            this->spawning_biomass[year * seasons + (season - 1)] = sb / this->survey_biomass_units;
         }
 
         inline void Reset() {
@@ -380,13 +486,13 @@ namespace mas {
     };
 
     template<typename REAL_T>
-    std::ostream& operator<<(std::ostream& out, mas::PopulationInfo<REAL_T>& pi) {
+    std::ostream& operator<<(std::ostream& out, mas::AreaPopulation<REAL_T>& pi) {
         out << std::fixed;
         out << std::setprecision(2);
         out << "Population " << pi.natal_population->id << "\n";
         out << "Area " << pi.area->id << "\n";
         out << "Total Mortality at Age (Z)\n";
-        if (pi.male_chohorts) {
+        if (pi.male_cohorts) {
             out << "Males\n";
         } else {
             out << "Females\n";
@@ -404,7 +510,7 @@ namespace mas {
         out << "Population " << pi.natal_population->id << "\n";
         out << "Area " << pi.area->id << "\n";
         out << "Numbers at Age \n";
-        if (pi.male_chohorts) {
+        if (pi.male_cohorts) {
             out << "Males\n";
         } else {
             out << "Females\n";
@@ -422,7 +528,7 @@ namespace mas {
         out << "Population " << pi.natal_population->id << "\n";
         out << "Area " << pi.area->id << "\n";
         out << "Total Emigrants \n";
-        if (pi.male_chohorts) {
+        if (pi.male_cohorts) {
             out << "Males\n";
         } else {
             out << "Females\n";
@@ -440,7 +546,7 @@ namespace mas {
         out << "Population " << pi.natal_population->id << "\n";
         out << "Area " << pi.area->id << "\n";
         out << "Growth Pattern \n";
-        if (pi.male_chohorts) {
+        if (pi.male_cohorts) {
             out << "Males\n";
         } else {
             out << "Females\n";
@@ -454,58 +560,6 @@ namespace mas {
             out << "\n";
         }
         out << "\n\n";
-
-
-        out << "Population " << pi.natal_population->id << "\n";
-        out << "Area " << pi.area->id << "\n";
-        out << "weight_at_spawning \n";
-        if (pi.male_chohorts) {
-            out << "Males\n";
-        } else {
-            out << "Females\n";
-        }
-        for (int a = 0; a < pi.ages.size(); a++) {
-
-            out << pi.weight_at_spawning[a] << "\n";
-        }
-        out << "\n\n";
-        out << std::fixed;
-        out << "Population " << pi.natal_population->id << "\n";
-        out << "Area " << pi.area->id << "\n";
-        out << "length_at_season_start \n";
-        if (pi.male_chohorts) {
-            out << "Males\n";
-        } else {
-            out << "Females\n";
-        }
-        //        for (int y = 0; y < pi.years; y++) {
-        for (int s = 0; s < pi.ages.size(); s++) {
-            out << pi.length_at_season_start[ s] << " ";
-            //            }
-            out << "\n";
-
-        }
-        out << "\n";
-
-        
-        out << "\n\n";
-        out << std::fixed;
-        out << "Population " << pi.natal_population->id << "\n";
-        out << "Area " << pi.area->id << "\n";
-        out << "spawning_biomass_at_age \n";
-        if (pi.male_chohorts) {
-            out << "Males\n";
-        } else {
-            out << "Females\n";
-        }
-        //        for (int y = 0; y < pi.years; y++) {
-        for (int s = 0; s < pi.ages.size(); s++) {
-            out << pi.spawning_biomass_at_age[ s] << " ";
-            //            }
-            out << "\n";
-
-        }
-        out << "\n";
 
         return out;
     }
@@ -524,15 +578,15 @@ namespace mas {
         /*********************************************
          * Area specific natural mortality           *
          *********************************************/
-        std::map<int, int> male_natural_mortality_ids; //area, natural mortality model  
-        std::map<int, int> female_natural_mortality_ids; //area, natural mortality model  
+        std::map<int, int> male_natural_mortality_ids; //area, natural mortality model
+        std::map<int, int> female_natural_mortality_ids; //area, natural mortality model
         typedef typename std::map<int, int>::iterator male_natural_mortality_ids_iterator;
         typedef typename std::map<int, int>::iterator female_natural_mortality_ids_iterator;
 
         /*********************************************
          * Area specific recruitment                 *
          *********************************************/
-        std::map<int, std::map<int, int> > recruitment_ids; //area, recruitment model  
+        std::map<int, std::map<int, int> > recruitment_ids; //area, recruitment model
         typedef typename std::map<int, std::map<int, int> >::iterator recruitment_ids_iterator;
         typedef typename std::map<int, int>::iterator recruitment_season_ids_iterator;
 
@@ -551,28 +605,27 @@ namespace mas {
         int ages;
         int growth_id;
 
+        std::vector<REAL_T> season_duration[seasons];
         std::shared_ptr<Area<REAL_T> > natal_area; //birth area
         std::vector<std::shared_ptr<Area<REAL_T> > > areas_list; //all areas
+        std::vector<std::shared_ptr<Fleet<REAL_T> > > fleets_list; //all fleets
 
         //Movement Tracking
-        typedef typename std::unordered_map<int, PopulationInfo<REAL_T> >::iterator cohort_iterator;
-        std::unordered_map<int, PopulationInfo<REAL_T> > male_cohorts;
-        std::unordered_map<int, PopulationInfo<REAL_T> > female_cohorts;
+        typedef typename std::unordered_map<int, AreaPopulation<REAL_T> >::iterator cohort_iterator;
+        std::unordered_map<int, AreaPopulation<REAL_T> > ap_map;
         std::unordered_map<int, int > movement_models_ids; //season keyed
         typedef typename std::unordered_map<int, int >::iterator movement_model_id_iterator;
 
-        std::shared_ptr<mas::Movement<REAL_T> > movement_model;
+        std::shared_ptr<mas::MovementBase<REAL_T> > movement_model;
 
-        std::unordered_map<int, std::shared_ptr<mas::Movement<REAL_T> > > movement_models; //year keyed
-        typedef typename std::unordered_map<int, std::shared_ptr<mas::Movement<REAL_T> > >::iterator movement_model_iterator;
+        std::unordered_map<int, std::shared_ptr<mas::MovementBase<REAL_T> > > movement_models; //year keyed
+        typedef typename std::unordered_map<int, std::shared_ptr<mas::MovementBase<REAL_T> > >::iterator movement_model_iterator;
         //Estimable
         std::vector<std::vector<variable> > movement_coefficients;
-        std::vector<variable> initial_population_males;
-        std::vector<variable> initial_population_females;
+        std::vector<variable> initial_population;
 
 
-        std::unordered_map<int, std::unordered_map<int, std::vector<REAL_T> > > maturity_models; //area / sex
-        typedef typename std::unordered_map<int, std::unordered_map<int, std::vector<REAL_T> > >::iterator maturity_models_iterator;
+
         //    typedef typename std::unordered_map<std::vector<std::vector<variable> > >::iterator movement_coefficient_iterator;
 
         Population() {
@@ -580,25 +633,25 @@ namespace mas {
 
         Population(int years,
                 int seasons,
+                const std::vector<REAL_T> season_duration,
                 int areas,
+                int fleets,
                 const std::shared_ptr<Area<REAL_T> >& natal_area,
-                const std::vector<std::shared_ptr<Area<REAL_T> > >& areas_list) :
+                const std::vector<std::shared_ptr<Area<REAL_T> > >& areas_list,
+                const std::vector<std::shared_ptr<Fleet<REAL_T> > >& fleets_list) :
         years(years),
         seasons(seasons),
+        season_duration(season_duration),
         areas(areas),
         natal_area(natal_area),
-        areas_list(areas) {
+        areas_list(areas),
+        fleets_list(fleets) {
 
             for (int a = 0; a < areas_list.size(); a++) {
 
-                male_cohorts[areas_list[a]->id].natal_homing = this->natal_homing;
-                male_cohorts[areas_list[a]->id].area = areas_list[a];
-                male_cohorts[areas_list[a]->id].natal_area = this->natal_area;
-
-                female_cohorts[areas_list[a]->id].natal_homing = this->natal_homing;
-                female_cohorts[areas_list[a]->id].area = areas_list[a];
-                female_cohorts[areas_list[a]->id].natal_area = this->natal_area;
-                female_cohorts[areas_list[a]->id].male_chohorts = false;
+                ap_map[areas_list[a]->id].natal_homing = this->natal_homing;
+                ap_map[areas_list[a]->id].area = areas_list[a];
+                ap_map[areas_list[a]->id].natal_area = this->natal_area;
 
             }
 
@@ -611,91 +664,50 @@ namespace mas {
 
             for (int a = 0; a < areas_list.size(); a++) {
 
-                male_cohorts[a].Reset();
-                female_cohorts[a].Reset();
+                ap_map[a].Reset();
             }
 
             for (int i = 0; i < this->initial_numbers.size(); i++) {
 
-                switch (this->initial_numbers[i].type) {
-                    case MALE:
+                for (int x = 0; x < this->sexes; ++x) {
                         std::cout << "Setting initial numbers for males in area " << this->initial_numbers[i].area_id << "\n";
-                        this->male_cohorts[this->initial_numbers[i].area_id].initial_numbers = this->initial_numbers[i].values;
-                        break;
-
-                    case FEMALE:
-                        std::cout << "Setting initial numbers for females in area " << this->initial_numbers[i].area_id << "\n";
-                        this->female_cohorts[this->initial_numbers[i].area_id].initial_numbers = this->initial_numbers[i].values;
-
-                        break;
-
+                        this->ap_map[this->initial_numbers[i].area_id].initial_numbers = this->initial_numbers[i].values;
+  
                 }
             }
 
-
-
-        }
-
-        inline void IncrementTime(int& y, int& s) {
-            if (s == this->seasons) {
-                y += 1;
-                s = 1;
-            } else {
-                s++;
-            }
-        }
-
-        inline void DecrementTime(int& y, int& s) {
-            if (s == 1) {
-                y -= 1;
-                s = seasons;
-            } else {
-                s--;
-            }
         }
 
         inline void MoveFish(int year, int season) {
 
-            int y = year;
-            int s = season;
-            IncrementTime(y, s);
 
             movement_model_iterator it = this->movement_models.find(year + 1);
             if (it != this->movement_models.end()) {
 
+                int s = season - 1;
+                std::vector<std::vector<variable> >& male_probabilities = (*it).second->male_connectivity[s];
+                std::vector<std::vector<variable> >& female_probabilities = (*it).second->female_connectivity[s];
 
-
-                int ss = season - 1;
-                std::vector<std::vector<variable> >& male_probabilities = (*it).second->male_connectivity[ss];
-                std::vector<std::vector<variable> >& female_probabilities = (*it).second->female_connectivity[ss];
-                std::vector<std::vector<variable> >& rercruit_probabilities = (*it).second->recruit_connectivity[ss];
                 //should be square
                 for (int i = 0; i < male_probabilities.size(); i++) {
-                    PopulationInfo<REAL_T>& male_info_from = this->male_cohorts[(i + 1)];
-                    PopulationInfo<REAL_T>& female_info_from = this->female_cohorts[(i + 1)];
+                    AreaPopulation<REAL_T>& male_info_from = this->male_cohorts[(i + 1)];
+                    AreaPopulation<REAL_T>& female_info_from = this->female_cohorts[(i + 1)];
                     for (int j = 0; j < male_probabilities.size(); j++) {
-                        PopulationInfo<REAL_T>& male_info_to = this->male_cohorts[(j + 1)];
-                        PopulationInfo<REAL_T>& female_info_to = this->female_cohorts[(j + 1)];
-
-
-
                         if (i != j) {
-                            male_info_to.redistributed_recruits[year * this->seasons + (season - 1)] +=
-                                    rercruit_probabilities[i][j] * male_info_from.recruitment[year * this->seasons + (season - 1)];
-                            female_info_to.redistributed_recruits[year * this->seasons + (season - 1)] +=
-                                    rercruit_probabilities[i][j] * female_info_from.recruitment[year * this->seasons + (season - 1)];
+                            AreaPopulation<REAL_T>& male_info_to = this->male_cohorts[(j + 1)];
+                            AreaPopulation<REAL_T>& female_info_to = this->female_cohorts[(j + 1)];
 
                             for (int a = 0; a < this->ages; a++) {
                                 male_info_from.emigrants[year * this->seasons * this->ages + (season - 1) * this->ages + a] +=
                                         male_probabilities[i][j] * male_info_from.N[year * this->seasons * this->ages + (season - 1) * this->ages + a];
 
-                                male_info_to.imigrants[year * this->seasons * this->ages + (season - 1) * this->ages + a] +=
+                                male_info_to.immigrants[year * this->seasons * this->ages + (season - 1) * this->ages + a] +=
                                         male_probabilities[i][j] * male_info_from.N[year * this->seasons * this->ages + (season - 1) * this->ages + a];
 
                                 female_info_from.emigrants[year * this->seasons * this->ages + (season - 1) * this->ages + a] +=
                                         female_probabilities[i][j] * female_info_from.N[year * this->seasons * this->ages + (season - 1) * this->ages + a];
 
-                                female_info_to.imigrants[year * this->seasons * this->ages + (season - 1) * this->ages + a] +=
+                                female_info_to.immigrants[year * this->seasons * this->ages + (season - 1) * this->ages + a] +=
                                         female_probabilities[i][j] * female_info_from.N[year * this->seasons * this->ages + (season - 1) * this->ages + a];
                             }
 
@@ -703,7 +715,6 @@ namespace mas {
 
                     }
                 }
-
 
 
             } else {
@@ -716,7 +727,6 @@ namespace mas {
 
         void InitializePopulationinAreas() {
 
-
         }
 
         void Show() {
@@ -727,96 +737,71 @@ namespace mas {
         }
 
         void Evaluate() {
+
             InitializePopulationinAreas();
 
-            //
-            //            if (this->move_fish_before_lh) {
-            //                for (int y = 0; y < this->years; y++) {
-            //                    for (int s = 1; s <= this->seasons; s++) {
-            //
-            //
-            //                        for (int a = 0; a < areas_list.size(); a++) {
-            //                            male_cohorts[areas_list[a]->id].Mortality(y, s);
-            //                            female_cohorts[areas_list[a]->id].Mortality(y, s);
-            //
-            //
-            //
-            //                            male_cohorts[areas_list[a]->id].NumbersAtAge(y, s);
-            //                            female_cohorts[areas_list[a]->id].NumbersAtAge(y, s);
-            //
-            //                            this->MoveFish(y, s);
-            //
-            //                        }
-            //
-            //
-            //
-            //
-            //                        //                        for (int a = 0; a < areas_list.size(); a++) {
-            //                        //                            male_cohorts[areas_list[a]->id].NumbersAtAge(y, s);
-            //                        //                            female_cohorts[areas_list[a]->id].NumbersAtAge(y, s);
-            //                        //                        }
-            //
-            //                        for (int a = 0; a < areas_list.size(); a++) {
-            //                            male_cohorts[areas_list[a]->id].CatchAtAge(y, s);
-            //                            female_cohorts[areas_list[a]->id].CatchAtAge(y, s);
-            //                        }
-            //
-            //                    }
-            //                }
-            //            } else {
-            for (int y = 0; y < this->years; y++) {
-                for (int s = 1; s <= this->seasons; s++) {
 
-                    for (int a = 0; a < areas_list.size(); a++) {
+            if (this->move_fish_before_lh) {
+                for (int y = 0; y < this->years; y++) {
+                    for (int s = 1; s <= this->seasons; s++) {
 
 
+                        for (int a = 0; a < areas_list.size(); a++) {
+                            ap_map[areas_list[a]->id].Mortality(y, s);
 
-                        male_cohorts[areas_list[a]->id].Mortality(y, s);
-                        female_cohorts[areas_list[a]->id].Mortality(y, s);
+                            ap_map[areas_list[a]->id].NumbersAtAge(y, s);
 
+                            this->MoveFish(y, s);
 
-                        male_cohorts[areas_list[a]->id].Growth(y, s);
-                        female_cohorts[areas_list[a]->id].Growth(y, s);
-
-                        male_cohorts[areas_list[a]->id].NumbersAtAge(y, s);
-                        female_cohorts[areas_list[a]->id].NumbersAtAge(y, s);
-
-
-
-                        male_cohorts[areas_list[a]->id].SpawningBiomass(y, s);
-                        female_cohorts[areas_list[a]->id].SpawningBiomass(y, s);
-
-                        //for next time step
-                        male_cohorts[areas_list[a]->id].Recruitment(y, s);
-                        female_cohorts[areas_list[a]->id].Recruitment(y, s);
-                        //
-
-                        this->MoveFish(y, s);
+                        }
 
 
 
 
+                        //                        for (int a = 0; a < areas_list.size(); a++) {
+                        //                            male_cohorts[areas_list[a]->id].NumbersAtAge(y, s);
+                        //                            female_cohorts[areas_list[a]->id].NumbersAtAge(y, s);
+                        //                        }
 
-                        //                            male_cohorts[areas_list[a]->id].Fecundity(y, s);
-                        //                            female_cohorts[areas_list[a]->id].Fecundity(y, s);
-                        //
-                        //                            male_cohorts[areas_list[a]->id].Recruitment(y, s);
-                        //                            female_cohorts[areas_list[a]->id].Recruitment(y, s);
-                        //
-                        //                            male_cohorts[areas_list[a]->id].Growth(y, s);
-                        //                            female_cohorts[areas_list[a]->id].Growth(y, s);
+                        for (int a = 0; a < areas_list.size(); a++) {
+                            ap_map[areas_list[a]->id].CatchAtAge(y, s);
+                        }
+
                     }
+                }
+            } else {
+                for (int y = 0; y < this->years; y++) {
+                    for (int s = 1; s <= this->seasons; s++) {
+
+                        for (int a = 0; a < areas_list.size(); a++) {
+                            ap_map[areas_list[a]->id].Mortality(y, s);
+
+                            ap_map[areas_list[a]->id].Growth(y, s);
+
+                            ap_map[areas_list[a]->id].NumbersAtAge(y, s);
+
+                            this->MoveFish(y, s);
+
+                            //                            male_cohorts[areas_list[a]->id].Fecundity(y, s);
+                            //                            female_cohorts[areas_list[a]->id].Fecundity(y, s);
+                            //
+                            //                            male_cohorts[areas_list[a]->id].Recruitment(y, s);
+                            //                            female_cohorts[areas_list[a]->id].Recruitment(y, s);
+                            //
+                            //                            male_cohorts[areas_list[a]->id].Growth(y, s);
+                            //                            female_cohorts[areas_list[a]->id].Growth(y, s);
+                        }
 
 
 
-                    //                        this->MoveFish();
+                        //                        this->MoveFish();
 
-                    //                        for (int a = 0; a < areas_list.size(); a++) {
-                    //                            male_cohorts[areas_list[a]->id].NumbersAtAge(y, s);
-                    //                            female_cohorts[areas_list[a]->id].NumbersAtAge(y, s);
-                    //                        }
+                        //                        for (int a = 0; a < areas_list.size(); a++) {
+                        //                            male_cohorts[areas_list[a]->id].NumbersAtAge(y, s);
+                        //                            female_cohorts[areas_list[a]->id].NumbersAtAge(y, s);
+                        //                        }
 
-                    //                    }
+                    }
                 }
             }
 

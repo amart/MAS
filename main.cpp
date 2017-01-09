@@ -99,6 +99,7 @@ void create() {
 
     out.add_dimension("years", 30);
     out.add_dimension("seasons", 1);
+    out.add_dimension("season_duration",1);
     out.add_dimension("ages", 10);
 
     //

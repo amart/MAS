@@ -39,7 +39,68 @@ namespace mas {
 
     template<typename REAL_T>
     struct FecundityBase : mas::ModelObject<REAL_T> {
-   
+
+        typedef typename VariableTrait<REAL_T>::variable variable;
+
+        virtual const variable Evaluate(const int& sex, const variable& age) = 0;
+
+        virtual const std::string Name() {
+            return "FecundityBase";
+        }
+
+    };
+
+
+    template<typename REAL_T>
+    struct Logistic : FecundityBase<REAL_T> {
+        typedef typename VariableTrait<REAL_T>::variable variable;
+        variable a50; //age of 50% maturity
+        variable s; //the rate of increase in maturity at a50
+
+        /**
+         * Age based logistic maturity
+         *
+         * @param sex
+         * @param age
+         * @return fraction_mature
+         */
+        virtual const variable Evaluate(const int& sex, const variable& age) {
+            return static_cast<REAL_T> (1.0) / (static_cast<REAL_T> (1.0) + std::exp(-1.0*(age - a50)/s));
+        }
+
+        virtual const std::string Name() {
+            return "Logistic Fecundity";
+        }
+
+    };
+
+    template<typename REAL_T>
+    struct DoubleLogistic : FecundityBase<REAL_T> {
+        typedef typename VariableTrait<REAL_T>::variable variable;
+        variable alpha_asc; //ascending alpha
+        variable beta_asc; // ascending beta
+        variable alpha_desc; // descending alpha
+        variable beta_desc; // descending beta
+
+        /**
+         * Age based double logistic maturity
+         *
+         * @param sex
+         * @param age
+         * @return fraction_mature
+         */
+        virtual const variable Evaluate(const int& sex, const variable& age) {
+            return (static_cast<REAL_T> (1.0) /
+                    (static_cast<REAL_T> (1.0) +
+                    std::exp(-beta_asc * (age - alpha_asc)))) *
+                    (static_cast<REAL_T> (1.0) - (static_cast<REAL_T> (1.0) /
+                    (static_cast<REAL_T> (1.0) +
+                    std::exp(-beta_desc * (age - alpha_desc)))));
+        }
+
+        virtual const std::string Name() {
+            return "Double Logistic Fecundity";
+        }
 
     };
 
