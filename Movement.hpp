@@ -45,6 +45,7 @@ namespace mas {
     template<typename REAL_T>
     struct Movement : mas::ModelObject<REAL_T> {
         typedef typename VariableTrait<REAL_T>::variable variable;
+        std::vector<std::vector<std::vector<variable> > >  recruit_connectivity;
         std::vector<std::vector<std::vector<variable> > >  male_connectivity; 
         std::vector<std::vector<std::vector<variable> > >  female_connectivity; 
 
