@@ -43,8 +43,12 @@ namespace mas {
     struct Fleet : mas::ModelObject<REAL_T> {
         typedef typename VariableTrait<REAL_T>::variable variable;
         variable f;
-        variable year_frac_peak_fishing;
+        std::vector<variable> year_frac_peak_fishing;
         std::string name;
+
+        bool fishing_fleet;
+        bool bycatch_fleet;
+        bool survey_fleet;
 
         //area, year X season
         //        std::map<int, std::vector<variable> > f;

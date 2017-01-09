@@ -60,6 +60,10 @@ namespace mas {
 
         std::vector<DataObject<REAL_T> > data;
 
+        Area() {
+
+        }
+
     };
 
     template<typename REAL_T>
